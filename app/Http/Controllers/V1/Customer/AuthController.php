@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1\Customer;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendSMSJob;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -23,15 +24,14 @@ class AuthController extends Controller
             return response()->json(['error' => $validator->errors()->first()], 401);
         }
 
-        $user = User::query()
-            ->firstOrCreate(
+        $user = User::query()->firstOrCreate(
                 ['cellphone' => $request->mobile]
             );
 
         $user->otp_code = mt_rand(1111, 9999);
         $user->save();
 
-//        dispatch(new SendSMSByPatternJob($cellphone, 'e72ao65rat8iy82', [['link' => 'lamtakam.com', 'title' => $user->otp_code]])); TODO
+        dispatch(new SendSMSJob($user->cellphone, $user->otp_code, 'JetMarketVerify'));
 
         return response()->json(['message' => 'کد با موفقیت ارسال شد.'], 200);
     }
