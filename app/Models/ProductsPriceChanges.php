@@ -11,6 +11,4 @@ class ProductsPriceChanges extends Model
 
     protected $table = 'products_price_changes';
 
-    protected $guarded = [];
-
 }

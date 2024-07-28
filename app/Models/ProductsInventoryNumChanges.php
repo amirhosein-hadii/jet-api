@@ -11,6 +11,4 @@ class ProductsInventoryNumChanges extends Model
 
     protected $table = 'products_inventory_num_changes';
 
-    protected $guarded = [];
-
 }

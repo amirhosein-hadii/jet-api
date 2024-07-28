@@ -11,8 +11,6 @@ class ProductVendor extends Model
 
     protected $table = 'vendors_products';
 
-    protected $guarded = [];
-
     public function product() {
         return $this->belongsTo(Product::class,'product_id','id');
     }

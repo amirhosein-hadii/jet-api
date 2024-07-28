@@ -11,6 +11,4 @@ class Shipping extends Model
 
     protected $table = 'shipping';
 
-    protected $guarded = [];
-
 }

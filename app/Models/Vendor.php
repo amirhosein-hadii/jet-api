@@ -11,8 +11,6 @@ class Vendor extends Model
 
     protected $table = 'vendors';
 
-    protected $guarded = [];
-
     public function vendorUser() {
         return $this->hasMany(VendorsUsers::class,'vendor_id','id');
     }

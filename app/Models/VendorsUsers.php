@@ -11,8 +11,6 @@ class VendorsUsers extends Model
 
     protected $table = 'vendors_users';
 
-    protected $guarded = [];
-
     public function user() {
         return $this->belongsTo(User::class);
     }

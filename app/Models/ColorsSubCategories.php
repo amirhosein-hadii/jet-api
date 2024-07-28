@@ -11,6 +11,5 @@ class ColorsSubCategories extends Model
 
     protected $table = 'colors_sub_categories';
 
-    protected $guarded = [];
 
 }

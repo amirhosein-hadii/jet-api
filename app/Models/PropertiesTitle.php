@@ -11,6 +11,4 @@ class PropertiesTitle extends Model
 
     protected $table = 'properties_title';
 
-    protected $guarded = [];
-
 }

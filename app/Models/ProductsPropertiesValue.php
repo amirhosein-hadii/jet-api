@@ -11,6 +11,4 @@ class ProductsPropertiesValue extends Model
 
     protected $table = 'products_properties_value';
 
-    protected $guarded = [];
-
 }

@@ -11,6 +11,4 @@ class VendorsProductsShipping extends Model
 
     protected $table = 'vendors_products_shipping';
 
-    protected $guarded = [];
-
 }
