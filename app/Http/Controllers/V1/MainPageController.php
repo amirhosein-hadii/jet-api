@@ -11,7 +11,7 @@ class MainPageController extends Controller
 {
     public function mainPage()
     {
-        $tags = Tag::query()->whereNull('parent_id')->pluck('name','id');
+        $tags = Tag::query()->whereNull('parent_id')->select('name','id')->get();
 
         $navbars = Navbar::query()
             ->with(['navbar_banners', 'navbar_products'])

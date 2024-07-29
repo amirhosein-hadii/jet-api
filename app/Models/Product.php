@@ -23,4 +23,12 @@ class Product extends Model
     public function properties() {
         return $this->hasMany(ProductsPropertiesValue::class,'product_id','id');
     }
+
+    public function importanceProperties() {
+        return $this->hasMany(ProductsPropertiesValue::class,'product_id','id')->where('importance',1);
+    }
+
+    public function productVendors() {
+        return $this->hasMany(ProductVendor::class,'product_id','id');
+    }
 }

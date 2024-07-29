@@ -11,10 +11,19 @@ class ProductController extends Controller
     public function show($id)
     {
         $product = Product::query()
-            ->with('images', 'properties')
+            ->with(['images', 'properties', 'importanceProperties'])
             ->find($id);
 
         return response()->json(['product' => $product],200);
 
+    }
+
+    public function list()
+    {
+        $products = Product::query()
+            ->with(['productVendors', 'importanceProperties'])
+            ->paginate(10);
+
+        return response()->json(['products' => $products],200);
     }
 }
