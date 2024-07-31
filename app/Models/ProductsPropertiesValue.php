@@ -11,4 +11,10 @@ class ProductsPropertiesValue extends Model
 
     protected $table = 'products_properties_value';
 
+    protected $hidden = ['created_at', 'updated_at'];
+
+
+    public function title() {
+        return $this->belongsTo(PropertiesTitle::class,'property_title_id','id');
+    }
 }
