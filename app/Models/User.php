@@ -32,4 +32,9 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    public function baskets()
+    {
+        return $this->hasMany(UsersBasket::class, 'user_id', 'id');
+    }
 }
