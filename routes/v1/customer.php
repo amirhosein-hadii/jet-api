@@ -17,3 +17,9 @@ Route::prefix('basket')->middleware('auth:api')->group(function () {
     Route::get('/list', 'BasketController@basketList');
 
 });
+
+// Profile
+Route::prefix('profile')->middleware('auth:api')->group(function () {
+    Route::post('/address/add', 'UserController@addAddress');
+    Route::post('/address/{id}/edit', 'UserController@editAddress');
+});
