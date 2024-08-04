@@ -13,7 +13,7 @@ class UsersBasket extends Model
 
     protected $guarded = [];
 
-    public function vendorProducts() {
-        return $this->belongsTo(ProductVendor::class,'vendor_product_id', 'id');
+    public function vendorProduct() {
+        return $this->belongsTo(VendorProduct::class,'vendor_product_id', 'id');
     }
 }

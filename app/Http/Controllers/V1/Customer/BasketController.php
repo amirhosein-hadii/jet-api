@@ -58,7 +58,7 @@ class BasketController extends Controller
 
             $userId = Auth::id();
             $baskets = UsersBasket::query()
-                ->with(['vendorProducts'])
+                ->with(['vendorProduct'])
                 ->where('user_id', $userId)
                 ->get();
 

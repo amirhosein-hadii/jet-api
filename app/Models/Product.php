@@ -29,6 +29,6 @@ class Product extends Model
     }
 
     public function productVendors() {
-        return $this->hasMany(ProductVendor::class,'product_id','id');
+        return $this->hasMany(VendorProduct::class,'product_id','id');
     }
 }
