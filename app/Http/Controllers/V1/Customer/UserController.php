@@ -18,6 +18,7 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->json()->all(), [
             'address' => 'required|string|max:255|min:10',
+            'postal_code' => 'required|digits:10',
         ]);
 
         if ($validator->fails()) {
@@ -29,9 +30,11 @@ class UserController extends Controller
         UserAddress::query()->where('user_id', $userId)->update(['selected' => 0]);
 
         UserAddress::query()->insert([
-            'user_id' => $userId,
-            'address' => $request->address,
-            'selected' => 1,
+            'user_id'     => $userId,
+            'address'     => $request->address,
+            'postal_code' => $request->postal_code,
+            'selected'    => 1,
+           // 'location_area_id' => ''  TODO
         ]);
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
@@ -41,6 +44,7 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->json()->all(), [
             'address' => 'required|string|max:255|min:10',
+            'postal_code' => 'required|digits:10',
         ]);
 
         if ($validator->fails()) {
@@ -56,7 +60,9 @@ class UserController extends Controller
             return ApiResponse::Json(400, 'اطلاعات وارد شده اشتباه می باشد.',[],400);
         }
 
-        $address->address = $request->address;
+        $address->address          = $request->address;
+        $address->postal_code      = $request->postal_code;
+//        $address->location_area_id = $request->location_area_id; TODO
         $address->save();
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);

@@ -15,6 +15,7 @@ Route::prefix('basket')->middleware('auth:api')->group(function () {
     Route::post('/add', 'BasketController@addToBasket');
     Route::post('/remove', 'BasketController@removeFromBasket');
     Route::get('/list', 'BasketController@basketList');
+    Route::get('/pre-create-invoice', 'BasketController@preCreateInvoice');
 
 });
 

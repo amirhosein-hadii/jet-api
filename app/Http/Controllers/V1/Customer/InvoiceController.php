@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\V1\Customer;
 
+use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\UsersBasket;
 use App\Models\UsersInvoice;
 use App\Models\UsersInvoicesProduct;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
+
 
 
 class InvoiceController extends Controller
@@ -25,7 +26,7 @@ class InvoiceController extends Controller
                 ->get();
 
             if (empty($baskets)) {
-                return response()->json(['error' => 'سبد شما خالی می باشد.'], 400);
+                return ApiResponse::Json(400,'سبد شما خالی می باشد.', [],400);
             }
 
             DB::beginTransaction();

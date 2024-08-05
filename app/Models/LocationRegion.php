@@ -5,11 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Shipping extends Model
+class LocationRegion extends Model
 {
     use HasFactory;
 
-    protected $table = 'shipping';
+    protected $table = 'location_regions';
+
     protected $hidden = ['created_at', 'updated_at'];
 
 }

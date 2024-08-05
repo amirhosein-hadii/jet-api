@@ -10,6 +10,7 @@ class VendorProduct extends Model
     use HasFactory;
 
     protected $table = 'vendors_products';
+    protected $hidden = ['created_at', 'updated_at'];
 
     public function product() {
         return $this->belongsTo(Product::class,'product_id','id');

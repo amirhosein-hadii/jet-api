@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1;
 
+use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Navbar;
 use App\Models\Tag;
@@ -24,7 +25,7 @@ class MainPageController extends Controller
             ->orderByDesc('priority')
             ->get();
 
-        return response()->json(['tags' => $tags, 'navbars' => $navbars],200);
+        return ApiResponse::Json(200,'', ['tags' => $tags, 'navbars' => $navbars],200);
     }
 
 }

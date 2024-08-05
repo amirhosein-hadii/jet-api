@@ -56,21 +56,13 @@ class BasketController extends Controller
     public function basketList()
     {
         try {
-
             $userId = Auth::id();
             $baskets = UsersBasket::query()
                 ->with(['vendorProduct'])
                 ->where('user_id', $userId)
                 ->get();
 
-            $basketSum = self::basketSum($baskets);
-
-             $data = [
-                 'total_price' => $basketSum,
-                 'baskets' => $baskets
-             ];
-
-            return ApiResponse::Json(200,'', $data,200);
+            return ApiResponse::Json(200,'', $baskets,200);
 
         } catch (\Exception $exception) {
             return ApiResponse::Json(400, $exception->getMessage(), [],400);
@@ -86,6 +78,29 @@ class BasketController extends Controller
         }
 
         return $sum;
+    }
+
+    public function preCreateInvoice()
+    {
+        try {
+            $userId = Auth::id();
+            $baskets = UsersBasket::query()
+                ->with(['vendorProduct.shippings'])
+                ->where('user_id', $userId)
+                ->get();
+
+//            $basketSum = self::basketSum($baskets);
+
+            $data = [
+//                'total_price' => $basketSum,
+                'baskets' => $baskets
+            ];
+
+            return ApiResponse::Json(200,'', $data,200);
+
+        } catch (\Exception $exception) {
+            return ApiResponse::Json(400, $exception->getMessage(), [],400);
+        }
     }
 
 }
