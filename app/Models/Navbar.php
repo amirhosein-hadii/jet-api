@@ -11,6 +11,8 @@ class Navbar extends Model
 
     protected $table = 'navbars';
 
+    protected $hidden = ['created_at', 'updated_at'];
+
     public function navbar_products()
     {
         return $this->hasMany(NavbarProducts::class, 'navbar_id', 'id');

@@ -14,7 +14,12 @@ class MainPageController extends Controller
         $tags = Tag::query()->whereNull('parent_id')->select('name','id')->get();
 
         $navbars = Navbar::query()
-            ->with(['navbar_banners', 'navbar_products'])
+            ->with(['navbar_banners',
+                    'navbar_products' => function ($query) {
+                        $query->join('products', 'products.id', '=', 'navbars_products.product_id')
+                            ->select('navbars_products.*', 'products.title', 'products.avatar_link_l');
+                }
+            ])
             ->where('which_page', 'home')
             ->orderByDesc('priority')
             ->get();

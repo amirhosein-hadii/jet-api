@@ -10,4 +10,7 @@ class NavbarBanners extends Model
     use HasFactory;
 
     protected $table = 'navbars_banners';
+
+    protected $hidden = ['created_at', 'updated_at'];
+
 }

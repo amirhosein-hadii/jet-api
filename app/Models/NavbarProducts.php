@@ -10,4 +10,7 @@ class NavbarProducts extends Model
     use HasFactory;
 
     protected $table = 'navbars_products';
+
+    protected $hidden = ['created_at', 'updated_at'];
+
 }
