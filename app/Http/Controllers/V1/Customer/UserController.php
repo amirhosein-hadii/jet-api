@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\UserAddress;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -17,17 +18,20 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->json()->all(), [
             'address' => 'required|string|max:255|min:10',
-            'selected' => 'boolean|nullable',
         ]);
 
         if ($validator->fails()) {
             return ApiResponse::Json(400, $validator->errors()->first(),[],400);
         }
 
+        $userId = Auth::id();
+
+        UserAddress::query()->where('user_id', $userId)->update(['selected' => 0]);
+
         UserAddress::query()->insert([
-            'user_id' => Auth::id(),
+            'user_id' => $userId,
             'address' => $request->address,
-            'selected' => $request->selected == 1 ? 1 : 0,
+            'selected' => 1,
         ]);
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
@@ -37,7 +41,6 @@ class UserController extends Controller
     {
         $validator = Validator::make($request->json()->all(), [
             'address' => 'required|string|max:255|min:10',
-            'selected' => 'boolean|nullable',
         ]);
 
         if ($validator->fails()) {
@@ -54,9 +57,30 @@ class UserController extends Controller
         }
 
         $address->address = $request->address;
-        $address->selected = $request->selected == 1 ? 1 : 0;
         $address->save();
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+    }
+
+    public function changeSelectedAddress($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $userId = Auth::id();
+            UserAddress::query()->where('user_id', $userId)->update(['selected' => 0]);
+            $update = UserAddress::query()->where('user_id', $userId)->where('id', $id)->update(['selected' => 1]);
+            if (!$update) {
+                throw new \Exception('اطلاعات وارد شده اشتباه است.');
+            }
+
+            DB::commit();
+
+            return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ApiResponse::Json(400, 'خطایی رخ داده است.', [],400);
+        }
     }
 }
