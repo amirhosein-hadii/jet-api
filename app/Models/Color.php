@@ -11,6 +11,8 @@ class Color extends Model
 
     protected $table = 'colors';
 
+    protected $hidden = ['created_at', 'updated_at'];
+
     public function subColors() {
         return $this->hasMany(ColorsSubCategories::class, 'color_id');
     }

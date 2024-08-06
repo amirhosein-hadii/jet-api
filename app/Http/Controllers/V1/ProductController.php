@@ -4,39 +4,48 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\ColorsSubCategories;
 use App\Models\Product;
 use App\Models\PropertiesSuperLabel;
-use Illuminate\Http\Request;
+
 
 class ProductController extends Controller
 {
     public function show($id)
     {
-        $product = Product::query()
-            ->with([
-                'images', 'productVendors',
-                'importanceProperties' => function ($q) {
-                    $q->join('properties_title', 'properties_title.id', 'products_properties_value.property_title_id')
+        try {
+            $product = Product::query()
+                ->with([
+                    'images', 'productVendors.vendor:id,name', 'productVendors.color',
+                    'importanceProperties' => function ($q) {
+                        $q->join('properties_title', 'properties_title.id', 'products_properties_value.property_title_id')
+                            ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
+                                'properties_title.name as title_name', 'properties_title.priority', 'properties_title.id as title_id'
+                            )->orderBy('priority', 'desc');
+                    }
+                ])
+                ->findOrFail($id);
+
+            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('color_id'))->pluck('code', 'name');
+
+            $properties = PropertiesSuperLabel::query()
+                ->has('titles.ProductPropertiesValues')
+                ->with(['titles' => function($query) use ($id) {
+                    $query->join('products_properties_value', 'products_properties_value.property_title_id', 'properties_title.id')
+                        ->where('products_properties_value.product_id', $id)
                         ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
-                            'properties_title.name as title_name', 'properties_title.priority', 'properties_title.id as title_id'
+                            'properties_title.name as title_name', 'properties_title.priority', 'properties_title.property_super_label_id', 'properties_title.id as title_id'
                         )->orderBy('priority', 'desc');
-                }
-            ])
-            ->find($id);
+                }])
+                ->get();
 
-        $properties = PropertiesSuperLabel::query()
-            ->has('titles.ProductPropertiesValues')
-            ->with(['titles' => function($query) use ($id) {
-                $query->join('products_properties_value', 'products_properties_value.property_title_id', 'properties_title.id')
-                    ->where('products_properties_value.product_id', $id)
-                    ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
-                        'properties_title.name as title_name', 'properties_title.priority', 'properties_title.property_super_label_id', 'properties_title.id as title_id'
-                    )->orderBy('priority', 'desc');
-            }])
-            ->get();
+            return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties, 'colors' => $colors],200);
 
-        return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties],200);
+        } catch (\Exception $e) {
+            return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
+        }
     }
+
 
     public function list()
     {

@@ -11,6 +11,7 @@ class Product extends Model
 
     protected $table = 'products';
 
+    protected $hidden = ['created_at', 'updated_at'];
 
     public function images() {
         return $this->hasMany(ProductImage::class,'product_id','id');

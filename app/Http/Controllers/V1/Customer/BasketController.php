@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Models\UsersBasket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class BasketController extends Controller
@@ -58,7 +59,9 @@ class BasketController extends Controller
         try {
             $userId = Auth::id();
             $baskets = UsersBasket::query()
-                ->with(['vendorProduct'])
+                ->join('vendors_products', 'vendors_products.id', 'users_basket.vendor_product_id')
+                ->groupBy('users_basket.vendor_product_id')
+                ->select( 'vendor_id', 'product_id', 'vendor_product_id', DB::raw('SUM(price) price'), DB::raw('COUNT(1) count'))
                 ->where('user_id', $userId)
                 ->get();
 
@@ -73,7 +76,7 @@ class BasketController extends Controller
     {
         $sum = 0;
         foreach ($baskets as $basket) {
-            $amount = $basket->vendorProducts->price;
+            $amount = $basket->vendorProduct->price;
             $sum += $amount;
         }
 
@@ -89,10 +92,10 @@ class BasketController extends Controller
                 ->where('user_id', $userId)
                 ->get();
 
-//            $basketSum = self::basketSum($baskets);
+            $basketSum = self::basketSum($baskets);
 
             $data = [
-//                'total_price' => $basketSum,
+                'total_price' => $basketSum,
                 'baskets' => $baskets
             ];
 

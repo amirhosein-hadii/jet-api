@@ -11,5 +11,6 @@ class ColorsSubCategories extends Model
 
     protected $table = 'colors_sub_categories';
 
+    protected $hidden = ['created_at', 'updated_at'];
 
 }

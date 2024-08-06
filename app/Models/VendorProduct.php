@@ -16,6 +16,10 @@ class VendorProduct extends Model
         return $this->belongsTo(Product::class,'product_id','id');
     }
 
+    public function vendor() {
+        return $this->belongsTo(Vendor::class,'vendor_id','id');
+    }
+
     public function color() {
         return $this->belongsTo(ColorsSubCategories::class,'color_id','id');
     }
