@@ -24,4 +24,5 @@ Route::prefix('profile')->middleware('auth:api')->group(function () {
     Route::post('/address/add', 'UserController@addAddress');
     Route::post('/address/{id}/edit', 'UserController@editAddress');
     Route::post('/address/{id}/change-selected', 'UserController@changeSelectedAddress');
+    Route::get('/address/list', 'UserController@listAddress');
 });

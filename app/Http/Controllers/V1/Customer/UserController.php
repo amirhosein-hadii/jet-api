@@ -17,8 +17,9 @@ class UserController extends Controller
     public function addAddress(Request $request)
     {
         $validator = Validator::make($request->json()->all(), [
-            'address' => 'required|string|max:255|min:10',
+            'address'     => 'required|string|max:255|min:10',
             'postal_code' => 'required|digits:10',
+            'city_id'     => 'required|exists:location_cities,id'
         ]);
 
         if ($validator->fails()) {
@@ -34,7 +35,7 @@ class UserController extends Controller
             'address'     => $request->address,
             'postal_code' => $request->postal_code,
             'selected'    => 1,
-           // 'location_area_id' => ''  TODO
+            'city_id'     => $request->city_id
         ]);
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
@@ -43,8 +44,9 @@ class UserController extends Controller
     public function editAddress($id, Request $request)
     {
         $validator = Validator::make($request->json()->all(), [
-            'address' => 'required|string|max:255|min:10',
+            'address'     => 'required|string|max:255|min:10',
             'postal_code' => 'required|digits:10',
+            'city_id'     => 'required|exists:location_cities,id'
         ]);
 
         if ($validator->fails()) {
@@ -60,9 +62,10 @@ class UserController extends Controller
             return ApiResponse::Json(400, 'اطلاعات وارد شده اشتباه می باشد.',[],400);
         }
 
-        $address->address          = $request->address;
-        $address->postal_code      = $request->postal_code;
-//        $address->location_area_id = $request->location_area_id; TODO
+        $address->address      = $request->address;
+        $address->postal_code  = $request->postal_code;
+        $address->city_id      = $request->city_id;
+        $address->selected     = 1;
         $address->save();
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
@@ -88,5 +91,11 @@ class UserController extends Controller
             DB::rollBack();
             return ApiResponse::Json(400, 'خطایی رخ داده است.', [],400);
         }
+    }
+
+    public function listAddress()
+    {
+        $addresses = UserAddress::query()->where('user_id', Auth::id())->get();
+        return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', $addresses,200);
     }
 }
