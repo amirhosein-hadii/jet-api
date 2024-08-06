@@ -60,8 +60,14 @@ class BasketController extends Controller
             $userId = Auth::id();
             $baskets = UsersBasket::query()
                 ->join('vendors_products', 'vendors_products.id', 'users_basket.vendor_product_id')
+                ->join('products', 'products.id','=', 'vendors_products.product_id')
+                ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.color_id')
                 ->groupBy('users_basket.vendor_product_id')
-                ->select( 'vendor_id', 'product_id', 'vendor_product_id', DB::raw('SUM(price) price'), DB::raw('COUNT(1) count'))
+                ->select( 'vendor_id', 'product_id', 'vendor_product_id',
+                    'products.avatar_link_l', 'products.title',
+                    'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
+                    DB::raw('SUM(price) price'), DB::raw('COUNT(1) count')
+                )
                 ->where('user_id', $userId)
                 ->get();
 
@@ -87,8 +93,17 @@ class BasketController extends Controller
     {
         try {
             $userId = Auth::id();
+
             $baskets = UsersBasket::query()
-                ->with(['vendorProduct.shippings'])
+                ->with(['vendorProduct' => function ($q) use ($userId){
+                    $q->with('shippings')
+                        ->join('products', 'products.id','=', 'vendors_products.product_id')
+                        ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.color_id')
+                        ->select('vendors_products.id', 'vendor_id', 'product_id', 'vendors_products.price', 'vendors_products.free_delivery',
+                            'products.avatar_link_l', 'products.title',
+                            'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
+                        );
+                }])
                 ->where('user_id', $userId)
                 ->get();
 

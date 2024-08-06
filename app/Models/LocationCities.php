@@ -13,4 +13,8 @@ class LocationCities extends Model
 
     protected $hidden = ['created_at', 'updated_at'];
 
+    public function province() {
+        return $this->belongsTo(LocationProvince::class,'province_id', 'id');
+    }
+
 }

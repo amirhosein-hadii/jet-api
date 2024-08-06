@@ -11,5 +11,11 @@ class UserAddress extends Model
 
     protected $table = 'users_addresses';
 
+    protected $hidden = ['created_at', 'updated_at'];
+
+
+    public function city() {
+        return $this->belongsTo(LocationCities::class,'city_id','id');
+    }
 
 }

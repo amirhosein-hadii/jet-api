@@ -26,8 +26,6 @@ class ProductController extends Controller
                 ])
                 ->findOrFail($id);
 
-            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('color_id'))->pluck('code', 'name');
-
             $properties = PropertiesSuperLabel::query()
                 ->has('titles.ProductPropertiesValues')
                 ->with(['titles' => function($query) use ($id) {
@@ -38,6 +36,8 @@ class ProductController extends Controller
                         )->orderBy('priority', 'desc');
                 }])
                 ->get();
+
+            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('color_id'))->select('code', 'name')->get();
 
             return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties, 'colors' => $colors],200);
 

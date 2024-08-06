@@ -95,7 +95,16 @@ class UserController extends Controller
 
     public function listAddress()
     {
-        $addresses = UserAddress::query()->where('user_id', Auth::id())->get();
+        $addresses = UserAddress::query()
+            ->join('location_cities','location_cities.id','=','users_addresses.city_id')
+            ->join('location_provinces','location_provinces.id','=','location_cities.province_id')
+            ->where('user_id', Auth::id())
+            ->select('location_cities.id', 'address', 'postal_code', 'selected',
+                'location_cities.name as city_name', 'location_cities.id as city_id',
+                'location_provinces.name as province_name' ,'location_provinces.id as province_id'
+            )->orderBy('selected', 'desc')
+            ->get();
+
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', $addresses,200);
     }
 }

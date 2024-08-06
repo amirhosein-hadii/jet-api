@@ -14,7 +14,7 @@ class Product extends Model
     protected $hidden = ['created_at', 'updated_at'];
 
     public function images() {
-        return $this->hasMany(ProductImage::class,'product_id','id');
+        return $this->hasMany(ProductImage::class,'product_id','id')->where('products_images.status', 'active');
     }
 
     public function brand() {
