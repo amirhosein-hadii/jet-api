@@ -27,21 +27,30 @@ class ProductController extends Controller
                 ->findOrFail($id);
 
             $properties = PropertiesSuperLabel::query()
-                ->has('titles.ProductPropertiesValues')
+                ->whereHas('titles.ProductPropertiesValues', function ($q) use ($id) {
+                    $q->where('products_properties_value.product_id', $id);
+                })
                 ->with(['titles' => function($query) use ($id) {
-                    $query->join('products_properties_value', 'products_properties_value.property_title_id', 'properties_title.id')
+                    $query->join('products_properties_value', 'products_properties_value.property_title_id', '=', 'properties_title.id')
                         ->where('products_properties_value.product_id', $id)
-                        ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
-                            'properties_title.name as title_name', 'properties_title.priority', 'properties_title.property_super_label_id', 'properties_title.id as title_id'
-                        )->orderBy('priority', 'desc');
+                        ->select(
+                            'products_properties_value.name as value_name',
+                            'products_properties_value.product_id',
+                            'properties_title.name as title_name',
+                            'properties_title.priority',
+                            'properties_title.property_super_label_id',
+                            'properties_title.id as title_id'
+                        )
+                        ->orderBy('priority', 'desc');
                 }])
                 ->get();
 
-            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('color_id'))->select('code', 'name')->get();
+            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('color_id'))->select('id', 'code', 'name')->get();
 
             return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties, 'colors' => $colors],200);
 
         } catch (\Exception $e) {
+            dd($e->getMessage());
             return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
         }
     }
