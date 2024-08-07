@@ -10,19 +10,25 @@ Route::prefix('auth')->group(function () {
     Route::get('/get-user', 'AuthController@getUser')->middleware('auth:api');
 });
 
-// Basket
-Route::prefix('basket')->middleware('auth:api')->group(function () {
-    Route::post('/add', 'BasketController@addToBasket');
-    Route::post('/remove', 'BasketController@removeFromBasket');
-    Route::get('/list', 'BasketController@basketList');
-    Route::get('/pre-create-invoice', 'BasketController@preCreateInvoice');
-
-});
-
 // Profile
 Route::prefix('profile')->middleware('auth:api')->group(function () {
     Route::post('/address/add', 'UserController@addAddress');
     Route::post('/address/{id}/edit', 'UserController@editAddress');
     Route::post('/address/{id}/change-selected', 'UserController@changeSelectedAddress');
     Route::get('/address/list', 'UserController@listAddress');
+});
+
+// Basket
+Route::prefix('basket')->middleware('auth:api')->group(function () {
+    Route::post('/add', 'BasketController@addToBasket');
+    Route::post('/remove', 'BasketController@removeFromBasket');
+    Route::get('/list', 'BasketController@basketList');
+
+});
+
+// Invoice
+Route::prefix('invoice')->middleware('auth:api')->group(function () {
+    Route::get('/pre-create', 'InvoiceController@preCreateInvoice');
+    Route::post('/create', 'InvoiceController@createInvoice');
+
 });

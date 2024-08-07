@@ -11,4 +11,6 @@ class VendorsProductsShipping extends Model
 
     protected $table = 'vendors_products_shipping';
 
+    protected $hidden = ['created_at', 'updated_at'];
+
 }

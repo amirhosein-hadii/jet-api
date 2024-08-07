@@ -36,4 +36,9 @@ class VendorProduct extends Model
     {
         return $this->belongsToMany(Shipping::class, 'vendors_products_shipping', 'vendor_product_id', 'shipping_id');
     }
+
+    public function vendors_products_shipping()
+    {
+        return $this->hasMany(VendorsProductsShipping::class, 'vendor_product_id', 'id');
+    }
 }
