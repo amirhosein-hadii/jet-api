@@ -96,13 +96,17 @@ class BasketController extends Controller
 
             $baskets = UsersBasket::query()
                 ->with(['vendorProduct' => function ($q) use ($userId){
-                    $q->with('shippings')
-                        ->join('products', 'products.id','=', 'vendors_products.product_id')
-                        ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.color_id')
-                        ->select('vendors_products.id', 'vendor_id', 'product_id', 'vendors_products.price', 'vendors_products.free_delivery',
-                            'products.avatar_link_l', 'products.title',
-                            'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
-                        );
+                    $q->with(['vendors_products_shipping' => function ($q) {
+                        $q->join('shipping', 'shipping.id', '=', 'vendors_products_shipping.shipping_id')
+                            ->select('vendors_products_shipping.id as id', 'vendors_products_shipping.vendor_product_id',
+                                'shipping.by');
+                    }])
+                    ->join('products', 'products.id','=', 'vendors_products.product_id')
+                    ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.color_id')
+                    ->select('vendors_products.id', 'vendor_id', 'product_id', 'vendors_products.price', 'vendors_products.free_delivery',
+                        'products.avatar_link_l', 'products.title',
+                        'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
+                    );
                 }])
                 ->where('user_id', $userId)
                 ->get();
