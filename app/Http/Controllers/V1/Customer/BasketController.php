@@ -25,7 +25,7 @@ class BasketController extends Controller
 
         UsersBasket::query()->insert([
             'user_id' => Auth::id(),
-           'vendor_product_id' => $request->vendor_product_id,
+            'vendor_product_id' => $request->vendor_product_id,
             'next_purchase' => $request->next_purchase ?? 0,
         ]);
 

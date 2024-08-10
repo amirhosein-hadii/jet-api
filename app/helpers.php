@@ -2,8 +2,9 @@
 
 use Carbon\Carbon;
 use Morilog\Jalali\CalendarUtils;
+use Morilog\Jalali\Jalalian;
 
-    function convertToEnglishNums($number)
+function convertToEnglishNums($number)
     {
         $persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
         $arabic = ['٩', '٨', '٧', '٦', '٥', '٤', '٣', '٢', '١','٠'];
@@ -13,6 +14,21 @@ use Morilog\Jalali\CalendarUtils;
         $englishNumbersOnly   = str_replace($arabic, $num, $convertedPersianNums);
 
         return $englishNumbersOnly;
+    }
+
+    function convertToValidString($string)
+    {
+        $persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+        $arabic = ['٩', '٨', '٧', '٦', '٥', '٤', '٣', '٢', '١','٠'];
+        $num = range(0, 9);
+
+        $convertedPersianNums = str_replace($persian, $num, $string);
+        $englishNumbersOnly   = str_replace($arabic, $num, $convertedPersianNums);
+
+        $string = str_replace("ي", "ی", $englishNumbersOnly);
+        $string = str_replace("ك", "ک", $string);
+
+        return $string;
     }
 
     function riyalToToman($amount)
@@ -135,21 +151,10 @@ use Morilog\Jalali\CalendarUtils;
         return setJalalianTimeFormat($gregorian[0], $gregorian[1], $gregorian[2]);
     }
 
-    function convertToValidString($string)
-    {
-        $persian = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-        $arabic = ['٩', '٨', '٧', '٦', '٥', '٤', '٣', '٢', '١','٠'];
-        $num = range(0, 9);
-
-        $convertedPersianNums = str_replace($persian, $num, $string);
-        $englishNumbersOnly   = str_replace($arabic, $num, $convertedPersianNums);
-
-        $string = str_replace("ي", "ی", $englishNumbersOnly);
-        $string = str_replace("ك", "ک", $string);
-
-        return $string;
-    }
-
     function haveSameValues(array $arrayA, array $arrayB) {
         return empty(array_diff($arrayA, $arrayB)) && empty(array_diff($arrayB, $arrayA));
+    }
+
+    function jalalianAddDays(int $days) {
+        return Jalalian::forge(Carbon::now()->addDays($days))->format('Ymd');
     }
