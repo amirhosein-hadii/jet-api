@@ -45,7 +45,7 @@ class ProductController extends Controller
                 }])
                 ->get();
 
-            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('color_id'))->select('id', 'code', 'name')->get();
+            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('sub_color_id'))->select('id', 'code', 'name')->get();
 
             return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties, 'colors' => $colors],200);
 

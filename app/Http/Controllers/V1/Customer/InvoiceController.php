@@ -11,6 +11,8 @@ use App\Models\UsersInvoice;
 use App\Models\UsersInvoicesProduct;
 use App\Models\VendorProduct;
 use App\Models\VendorsProductsShipping;
+use App\Services\PaymentGateway\Behpardakht;
+use App\Services\PaymentGateway\Payment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
@@ -36,7 +38,7 @@ class InvoiceController extends Controller
                                 'shipping.by');
                     }])
                         ->join('products', 'products.id','=', 'vendors_products.product_id')
-                        ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.color_id')
+                        ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.sub_color_id')
                         ->select('vendors_products.id', 'vendor_id', 'product_id', 'vendors_products.price', 'vendors_products.free_delivery',
                             'products.avatar_link_l', 'products.title',
                             'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
