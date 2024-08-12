@@ -21,7 +21,7 @@ class VendorProduct extends Model
     }
 
     public function color() {
-        return $this->belongsTo(ColorsSubCategories::class,'color_id','id');
+        return $this->belongsTo(ColorsSubCategories::class,'sub_color_id','id');
     }
 
     public function changeInvestorNum() {
