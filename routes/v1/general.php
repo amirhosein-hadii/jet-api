@@ -15,3 +15,7 @@ Route::get('/product/list', 'ProductController@list');
 Route::get('/location/provinces', 'LocationController@provinces');
 Route::get('/location/{id}/cities', 'LocationController@cities');
 Route::get('/location/{id}/regions', 'LocationController@regions');
+
+
+// Order
+//Route::get('behpardakht/callback/', '@provinces');

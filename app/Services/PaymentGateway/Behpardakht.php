@@ -4,10 +4,8 @@
 namespace App\Services\PaymentGateway;
 
 
-use App\CustomerCard;
-use App\Http\Controllers\V1\DeeplinkController;
-use App\Order;
-use App\OrderLog;
+use App\Models\Order;
+use App\Models\OrderLog;
 use Illuminate\Http\Request;
 
 class Behpardakht implements PaymentGateway

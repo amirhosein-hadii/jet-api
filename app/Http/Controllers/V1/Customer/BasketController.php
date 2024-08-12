@@ -25,7 +25,7 @@ class BasketController extends Controller
 
         UsersBasket::query()->insert([
             'user_id' => Auth::id(),
-           'vendor_product_id' => $request->vendor_product_id,
+            'vendor_product_id' => $request->vendor_product_id,
             'next_purchase' => $request->next_purchase ?? 0,
         ]);
 
@@ -61,7 +61,7 @@ class BasketController extends Controller
             $baskets = UsersBasket::query()
                 ->join('vendors_products', 'vendors_products.id', 'users_basket.vendor_product_id')
                 ->join('products', 'products.id','=', 'vendors_products.product_id')
-                ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.color_id')
+                ->join('colors_sub_categories', 'colors_sub_categories.id','=', 'vendors_products.sub_color_id')
                 ->groupBy('users_basket.vendor_product_id')
                 ->select( 'vendor_id', 'product_id', 'vendor_product_id',
                     'products.avatar_link_l', 'products.title',
