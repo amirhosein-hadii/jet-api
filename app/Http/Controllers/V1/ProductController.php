@@ -59,11 +59,10 @@ class ProductController extends Controller
     public function list()
     {
         $products = Product::query()
-            ->with([
-                'productVendors' => function ($q) {
-                    $q->where('status', 'active');
-                }
-                , 'importanceProperties'])
+            ->with(['importanceProperties'])
+            ->where('products.status', 'active')
+            ->select('id', 'brand_id', 'title', 'tag_id', 'avatar_link_l')
+            ->orderByDesc('id')
             ->paginate(10);
 
         return ApiResponse::Json(200,'', ['products' => $products],200);
