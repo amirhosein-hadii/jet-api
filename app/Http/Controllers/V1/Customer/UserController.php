@@ -35,7 +35,8 @@ class UserController extends Controller
             'address'     => $request->address,
             'postal_code' => $request->postal_code,
             'selected'    => 1,
-            'city_id'     => $request->city_id
+            'city_id'     => $request->city_id,
+            'status'      => 'active'
         ]);
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
@@ -53,22 +54,39 @@ class UserController extends Controller
             return ApiResponse::Json(400, $validator->errors()->first(),[],400);
         }
 
-        $address = UserAddress::query()
-            ->where('id', $id)
-            ->where('user_id', Auth::id())
-            ->first();
+        try {
+            DB::beginTransaction();
 
-        if (!$address) {
+            $userId = Auth::id();
+
+            $inactiveAddress = UserAddress::query()
+                ->where('id', $id)
+                ->where('user_id', $userId)
+                ->update(['status' => 'inactive']);
+
+            if (!$inactiveAddress) {
+                throw new \Exception('خطا در بروزرسانی آدرس قبلی');
+            }
+
+
+            UserAddress::query()->insert([
+                'user_id'     => $userId,
+                'address'     => $request->address,
+                'postal_code' => $request->postal_code,
+                'selected'    => 1,
+                'city_id'     => $request->city_id,
+                'status'      => 'active'
+            ]);
+
+            DB::commit();
+
+            return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
             return ApiResponse::Json(400, 'اطلاعات وارد شده اشتباه می باشد.',[],400);
         }
 
-        $address->address      = $request->address;
-        $address->postal_code  = $request->postal_code;
-        $address->city_id      = $request->city_id;
-        $address->selected     = 1;
-        $address->save();
-
-        return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
     }
 
     public function changeSelectedAddress($id)

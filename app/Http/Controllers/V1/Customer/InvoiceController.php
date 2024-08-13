@@ -16,6 +16,7 @@ use App\Services\PaymentGateway\Payment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 
 class InvoiceController extends Controller
@@ -74,6 +75,20 @@ class InvoiceController extends Controller
 
     public function createInvoice(Request $request)
     {
+        $validator = Validator::make($request->json()->all(), [
+            '*.vendor_product_id'            => 'required|integer',
+            '*.user_address_id'              => 'required|integer',
+            '*.vendors_products_shipping_id' => 'required|integer',
+        ], [
+            '*.vendor_product_id.required' => 'انتخاب محصول اجباری است.',
+            '*.user_address_id.required' => 'انتخاب آدرس برای هر محصول اجباری است.',
+            '*.vendors_products_shipping_id.required' => 'انتخاب نحوه ارسال برای هر محصول اجباری است.',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::Json(400, $validator->errors()->first(),[],400);
+        }
+
         try {
             $items = collect($request->all());
             $userId = Auth::id();

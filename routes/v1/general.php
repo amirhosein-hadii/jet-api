@@ -18,4 +18,4 @@ Route::get('/location/{id}/regions', 'LocationController@regions');
 
 
 // Order
-//Route::get('behpardakht/callback/', '@provinces');
+Route::get('behpardakht/create/trans', 'BehpardakhtController@createTransactions');
