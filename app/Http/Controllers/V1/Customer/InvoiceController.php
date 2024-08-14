@@ -11,11 +11,9 @@ use App\Models\UsersInvoice;
 use App\Models\UsersInvoicesProduct;
 use App\Models\VendorProduct;
 use App\Models\VendorsProductsShipping;
-use App\Services\PaymentGateway\Behpardakht;
-use App\Services\PaymentGateway\Payment;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -146,7 +144,7 @@ class InvoiceController extends Controller
 
                 $origin_price = $vendor_product->price + $delivery_price;
 
-                $paid_price = $origin_price; //TODO after discount
+                $paid_price = $origin_price; // TODO after discount
 
                 $totalAmount += $paid_price;
 
@@ -179,7 +177,6 @@ class InvoiceController extends Controller
 
             UsersBasket::query()->where('user_id', $userId)->delete();
 
-            // TODO empty the basket
             DB::commit();
 
             return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
@@ -223,5 +220,10 @@ class InvoiceController extends Controller
         }
 
         throw new \Exception('خطا در محاسبه هزینه پست.' . $weight. $breakable,);
+    }
+
+    public function invoicePayment()
+    {
+
     }
 }
