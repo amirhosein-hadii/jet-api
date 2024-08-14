@@ -222,8 +222,4 @@ class InvoiceController extends Controller
         throw new \Exception('خطا در محاسبه هزینه پست.' . $weight. $breakable,);
     }
 
-    public function invoicePayment()
-    {
-
-    }
 }
