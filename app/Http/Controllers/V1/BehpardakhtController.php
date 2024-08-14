@@ -26,11 +26,11 @@ class BehpardakhtController extends Controller
         $psp = new Behpardakht();
         $res = $psp->TransactionCreate($order->id, $user, $order->amount, self::CALL_BACK . $order->id);
 
-        if (!isset($res['status']) || $res['status'] == 400 || is_null($res['redId'])) {
+        if (!isset($res['status']) || $res['status'] == 400 || is_null($res['refId'])) {
             return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
         }
 
-        return $psp->RedirectToGateway($res['redId']);
+        return $psp->RedirectToGateway($res['refId']);
     }
 
     public function callback($orderId, Request $request)
