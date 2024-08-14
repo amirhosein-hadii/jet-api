@@ -13,15 +13,19 @@ class MainPageController extends Controller
     public function mainPage()
     {
         $navbars = Navbar::query()
-            ->with(['navbar_banners',
+            ->with(['navbar_banners' => function ($q) {
+                $q->orderByDesc('priority');
+            },
                 'navbar_products' => function ($query) {
                     $query->join('products', 'products.id', '=', 'navbars_products.product_id')
                         ->join('vendors_products', 'vendors_products.product_id', '=', 'products.id')
+                        ->orderByDesc('priority')
                         ->select('navbars_products.*', 'products.title', 'products.avatar_link_l', DB::raw('MIN(vendors_products.price) as price'))
                         ->groupBy('navbars_products.id', 'products.title', 'products.avatar_link_l'); // Include all selected columns in the group by
                 }
             ])
             ->where('which_page', 'home')
+            ->where('status', 'active')
             ->orderByDesc('priority')
             ->get();
 

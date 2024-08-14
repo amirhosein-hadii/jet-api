@@ -123,7 +123,7 @@ class Behpardakht
         ];
     }
 
-    public function TransactionVerify($orderId, $transactionId, $reference, $amount)
+    public function TransactionVerify($orderId, $transactionId, $reference)
     {
         $parameters = [
             'terminalId' => env('BEH_TERMINAL_ID'),
