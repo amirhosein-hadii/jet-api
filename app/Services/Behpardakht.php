@@ -1,14 +1,15 @@
 <?php
 
 
-namespace App\Services\PaymentGateway;
+namespace App\Services;
 
 
 use App\Models\Order;
 use App\Models\OrderLog;
+
 use Illuminate\Http\Request;
 
-class Behpardakht implements PaymentGateway
+class Behpardakht
 {
 
     public function __construct()
@@ -43,7 +44,7 @@ class Behpardakht implements PaymentGateway
             OrderLog::where('order_id', $orderId)->update([
                 'content' => json_encode($client->faultstring)
             ]);
-            return $client->faultstring;
+            return ['status' => 400, 'msg' => $client->faultstring];
         }
 
         $err = $client->getError();
@@ -51,7 +52,7 @@ class Behpardakht implements PaymentGateway
             OrderLog::where('order_id', $orderId)->update([
                 'content' => json_encode($err)
             ]);
-            return $err;
+            return ['status' => 400, 'msg' => $err, 'refId' => null];
         }
 
         $res = explode(',', $result);
@@ -62,12 +63,14 @@ class Behpardakht implements PaymentGateway
                 'content' => json_encode($res)
             ]);
 //            return 'خطایی رخ داده است:' . $ResCode;
-            return $ResCode;
+            return ['status' => 400, 'msg' => $ResCode, 'refId' => null];
         }
+
         OrderLog::where('order_id', $orderId)->update([
             'reference' => $res[1],
         ]);
-        return $res[1];
+
+        return ['status' => 200, 'msg' => 'success', 'refId' => $res[1]];
     }
 
     /*
@@ -186,16 +189,15 @@ class Behpardakht implements PaymentGateway
             return false;
         }
 
-
-        $order = Order::where('ref_id', $refId)->with('customerCard')->with('user')->first();
-
-        if (is_object($order) && $order->status == 'success') {
-            $deepLink = DeeplinkController::getDeeplinkControllerInstance()->checkDeepLink(null, $order);
-            return view('before_payed_link', ['refId' => $refId, 'orderId' => $order->id, 'saleReference' => $order->sale_reference, 'amount' => $order->amount, 'deepLink' => $deepLink]);
-
-        } elseif (is_object($order) && $order->status != 'success') {
-            return false;
-        }
-        return view('ban', compact('refId'));
+//        $order = Order::where('ref_id', $refId)->with('customerCard')->with('user')->first();
+//
+//        if (is_object($order) && $order->status == 'success') {
+//            $deepLink = DeeplinkController::getDeeplinkControllerInstance()->checkDeepLink(null, $order);
+//            return view('before_payed_link', ['refId' => $refId, 'orderId' => $order->id, 'saleReference' => $order->sale_reference, 'amount' => $order->amount, 'deepLink' => $deepLink]);
+//
+//        } elseif (is_object($order) && $order->status != 'success') {
+//            return false;
+//        }
+        return view('gateway.redirect_to_bank', compact('refId'));
     }
 }

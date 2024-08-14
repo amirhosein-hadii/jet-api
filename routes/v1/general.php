@@ -17,5 +17,6 @@ Route::get('/location/{id}/cities', 'LocationController@cities');
 Route::get('/location/{id}/regions', 'LocationController@regions');
 
 
-// Order
-Route::get('behpardakht/create/trans', 'BehpardakhtController@createTransactions');
+// behpardakht
+Route::get('behpardakht/create/trans/{orderId}', 'BehpardakhtController@createTransactions');
+Route::get('behpardakht/callback/{orderId}', 'BehpardakhtController@createTransactions');
