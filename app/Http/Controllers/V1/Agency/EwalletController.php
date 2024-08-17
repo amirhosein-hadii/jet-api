@@ -10,9 +10,21 @@ use Illuminate\Http\Request;
 
 class EwalletController extends Controller
 {
-    public function login(Request $request)
+    private $service;
+
+    public function __construct()
     {
-        $agency = new Ewallet();
-        return $agency->login();
+        $this->service = new Ewallet();
+    }
+
+    public function createUser(Request $request)
+    {
+        try {
+            $res = $this->service->createUser('09361256776', 'legal');
+
+            return $res;
+        } catch (\Exception $e) {
+            return ApiResponse::Json(400,$e->getMessage(), [],400);
+        }
     }
 }
