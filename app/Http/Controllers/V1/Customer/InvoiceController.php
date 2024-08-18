@@ -24,6 +24,9 @@ class InvoiceController extends Controller
 
     const SHIPPING_DATE_DILAY_FOR_NOT_IN_SAME_CITY = 2;
 
+    protected $addresses;
+    protected $vendor_products_id;
+
     public function preCreateInvoice()
     {
         try {
@@ -71,7 +74,7 @@ class InvoiceController extends Controller
         return $sum;
     }
 
-    public function createInvoice(Request $request)
+    public function validation($request)
     {
         $validator = Validator::make($request->json()->all(), [
             '*.vendor_product_id'            => 'required|integer',
@@ -95,24 +98,144 @@ class InvoiceController extends Controller
             $selectedAddresses = array_unique($items->pluck('user_address_id')->toArray());
             $addresses = UserAddress::query()->where('user_id', $userId)->whereIn('id', $selectedAddresses)->select('id', 'city_id')->get();
             if (!haveSameValues($selectedAddresses, $addresses->pluck('id')->toArray())) {
-                return ApiResponse::Json(400, 'آدرس وارد شده اشتباه است.', [],400);
+                return ['status' => 400, 'msg' => 'آدرس وارد شده اشتباه است.'];
             }
+            $this->addresses = $addresses;
 
             // Check Basket
             $vendor_products_id = $items->pluck('vendor_product_id')->toArray();
             $baskets = UsersBasket::query()->where('user_id', $userId)->pluck('vendor_product_id')->toArray();
             if (!haveSameValues($vendor_products_id, $baskets) || count($baskets) != count($vendor_products_id)) {
-                return ApiResponse::Json(400, 'عدم مطابقت با سبد خرید.', [], 400);
+                return ['status' => 400, 'msg' => 'عدم مطابقت با سبد خرید.'];
             }
+            $this->vendor_products_id = $vendor_products_id;
 
             // Check shipping
             $vpsi = $items->pluck('vendor_product_id', 'vendors_products_shipping_id')->toArray();
             $vendorProductsShipping = VendorsProductsShipping::query()->whereIn('vendor_product_id', $vendor_products_id)->pluck('vendor_product_id', 'id')->toArray();
             foreach ($vpsi as $key => $value) {
                 if (!array_key_exists($key, $vendorProductsShipping) || $vendorProductsShipping[$key] !== $value) {
-                    throw new \Exception('آدرس انتخاب شده صحیح نمی باشد.');
+                    return ['status' => 400, 'msg' => 'آدرس انتخاب شده صحیح نمی باشد.'];
                 }
             }
+
+            return ['status' => 200, 'msg' => ''];
+
+        } catch (\Exception $exception) {
+            return ['status' => 400, 'msg' => $exception->getMessage()];
+        }
+    }
+
+    public function bill(Request $request)
+    {
+        try {
+            $validationRes = $this->validation($request);
+            if ($validationRes['status'] <> 200) {
+                return ApiResponse::Json($validationRes['status'], $validationRes['msg'] ?? 'خطایی رخ داده است', [], $validationRes['status']);
+            }
+
+            $res = $this->calculationDeliveryDateAndPrice($request);
+            if ($res['status'] <> 200) {
+                return ApiResponse::Json($res['status'], $res['msg'] ?? 'خطایی رخ داده است', [], $res['status']);
+            }
+
+            $data = [
+                'total_products_amount'   => $res['total_products_amount'],
+                'total_deliveries_amount' => $res['total_deliveries_amount'],
+                'total_amount'            => $res['total_products_amount'] + $res['total_deliveries_amount']
+            ];
+
+            return ApiResponse::Json(200, '', $data, $res['status']);
+
+        } catch (\Exception $e) {
+            return ApiResponse::Json(400, $e->getMessage(), [], 400);
+        }
+    }
+
+    public function calculationDeliveryDateAndPrice($request)
+    {
+        try {
+            $items = collect($request->all());
+
+            $vendor_products = VendorProduct::query()->with('vendor')->whereIn('id', $this->vendor_products_id)->get();
+
+            $totalProductsAmount = 0;
+            $vendorsDeliveryPrice = [];
+            $vendorsDeliveryDateFrom = [];
+            $vendorsDeliveryDateTo = [];
+            foreach ($items as $item)
+            {
+                $vendor_product = $vendor_products->where('id', $item['vendor_product_id'])->first();
+
+                $requestCityId = $this->addresses->where('id', $item['user_address_id'])->value('city_id');
+                $at_same_city =  $vendor_product->vendor->city_id == $requestCityId;
+
+                // Calculate delivery time
+                $delivery_dilay_for_not_same_city = $at_same_city ? 0 : self::SHIPPING_DATE_DILAY_FOR_NOT_IN_SAME_CITY;
+                $deliver_date_from = self::SHIPPING_DATE_FROM + $delivery_dilay_for_not_same_city;
+                $deliver_date_to = $deliver_date_from + self::SHIPPING_DATE_DILAY;
+
+                $vendorsDeliveryDateFrom[$vendor_product->vendor->id] = $deliver_date_from;
+                $vendorsDeliveryDateTo[$vendor_product->vendor->id] = $deliver_date_to;
+
+
+                // Calculate shipping cost
+                $shippingCost = self::getShippingCost($vendor_product->product->weight_size_level, $vendor_product->product->breakable);
+                $delivery_price = $at_same_city ? $shippingCost : $shippingCost + 50000;
+
+
+                if (array_key_exists($vendor_product->vendor->id, $vendorsDeliveryPrice)) {
+                    $vendorsDeliveryPrice[$vendor_product->vendor->id] = max($vendorsDeliveryPrice[$vendor_product->vendor->id], $delivery_price);
+                } else {
+                    $vendorsDeliveryPrice[$vendor_product->vendor->id] = $delivery_price;
+                }
+
+                $totalProductsAmount += $vendor_product->price;
+            }
+
+            $totalDeliveriesPrice = 0;
+            foreach ($vendorsDeliveryPrice as $deliverPrice)
+            {
+                $totalDeliveriesPrice += $deliverPrice;
+            }
+
+            return [
+                'status'                  => 200,
+                'vendors_delivery_price'  => $vendorsDeliveryPrice, // ['vendor_id' => delivery_price]
+                'deliver_date_from'       => $vendorsDeliveryDateFrom,
+                'deliver_date_to'         => $vendorsDeliveryDateTo,
+                'total_products_amount'   => $totalProductsAmount,
+                'total_deliveries_amount' => $totalDeliveriesPrice,
+                'vendor_products'         => $vendor_products
+            ];
+
+        } catch (\Exception $exception) {
+            return ['status' => 400, 'msg' => $exception->getMessage()];
+        }
+    }
+
+    public function createInvoice(Request $request)
+    {
+        try {
+            $validationRes = $this->validation($request);
+            if ($validationRes['status'] <> 200) {
+                return ApiResponse::Json($validationRes['status'], $validationRes['msg'] ?? 'خطایی رخ داده است', [],$validationRes['status']);
+            }
+
+            $res = $this->calculationDeliveryDateAndPrice($request);
+            if ($res['status'] <> 200) {
+                return ApiResponse::Json($res['status'], $res['msg'] ?? 'خطایی رخ داده است', [], $res['status']);
+            }
+
+            $vendor_products         = $res['vendor_products'];
+            $totalAmount             = $res['total_products_amount'] + $res['total_deliveries_amount'];
+            $vendorsDeliveryDateFrom = $res['deliver_date_from'];
+            $vendorsDeliveryDateTo   = $res['deliver_date_to'];
+            $vendorsDeliveryPrice    = $res['vendors_delivery_price'];
+
+
+            $items = collect($request->all());
+            $userId = Auth::id();
 
             DB::beginTransaction();
 
@@ -122,31 +245,20 @@ class InvoiceController extends Controller
                 'tracking_code' => rand(1111111111, 9999999999)
             ]);
 
-            $vendor_products = VendorProduct::query()->with('vendor')->whereIn('id', $vendor_products_id)->get();
 
             $insert = [];
-            $totalAmount = 0;
             foreach ($items as $item)
             {
                 $vendor_product = $vendor_products->where('id', $item['vendor_product_id'])->first();
 
-                $requestCityId = $addresses->where('id', $item['user_address_id'])->value('city_id');
-                $at_same_city =  $vendor_product->vendor->city_id == $requestCityId;
-
-                // Calculate delivery time
-                $delivery_dilay_for_not_same_city = $at_same_city ? 0 : self::SHIPPING_DATE_DILAY_FOR_NOT_IN_SAME_CITY;
-                $deliver_date_from = self::SHIPPING_DATE_FROM + $delivery_dilay_for_not_same_city;
-                $deliver_date_to = $deliver_date_from + self::SHIPPING_DATE_DILAY;
-
-                // Calculate shipping cost
-                $shippingCost = self::getShippingCost($vendor_product->product->weight_size_level, $vendor_product->product->breakable);
-                $delivery_price = $at_same_city ? $shippingCost : $shippingCost + 50000;
+                $delivery_price = 0;
+                if (array_key_exists($vendor_product->vendor->id, $vendorsDeliveryPrice)) {
+                    $delivery_price =+ $vendorsDeliveryPrice[$vendor_product->vendor->id];
+                    unset($vendorsDeliveryPrice[$vendor_product->vendor->id]);
+                }
 
                 $origin_price = $vendor_product->price + $delivery_price;
-
                 $paid_price = $origin_price; // TODO after discount
-
-                $totalAmount += $paid_price;
 
                 $insert[] = [
                     'invoice_id'                   => $userInvoice->id,
@@ -155,8 +267,8 @@ class InvoiceController extends Controller
                     'origin_price'                 => $origin_price,
                     'paid_price'                   => $paid_price,// TODO after discount
                     'vendors_products_shipping_id' => $item['vendors_products_shipping_id'],
-                    'deliver_date_from'            => jalalianAddDays($deliver_date_from),
-                    'deliver_date_to'              => jalalianAddDays($deliver_date_to),
+                    'deliver_date_from'            => jalalianAddDays($vendorsDeliveryDateFrom[$vendor_product->vendor->id]),
+                    'deliver_date_to'              => jalalianAddDays($vendorsDeliveryDateTo[$vendor_product->vendor->id]),
                     'delivery_price'               => $delivery_price,
                     'delivered_by_user_id'         => $userId,
                     'user_address_id'              => $item['user_address_id'],
@@ -181,10 +293,9 @@ class InvoiceController extends Controller
 
             return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
 
-        } catch (\Exception $exception) {
-
+        } catch (\Exception $e) {
             DB::rollBack();
-            dd($exception->getMessage());
+            return ApiResponse::Json(400, $e->getMessage(), [], 400);
         }
     }
 
