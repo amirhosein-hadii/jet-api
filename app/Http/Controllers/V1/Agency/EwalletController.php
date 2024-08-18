@@ -20,7 +20,7 @@ class EwalletController extends Controller
     public function createUser(Request $request)
     {
         try {
-            $res = $this->service->createUser('09361256776', 'legal');
+            $res = $this->service->createUser($request->cellphone, $request->ewallet_name);
 
             return $res;
         } catch (\Exception $e) {

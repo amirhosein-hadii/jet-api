@@ -8,7 +8,6 @@ use App\Models\ColorsSubCategories;
 use App\Models\Product;
 use App\Models\PropertiesSuperLabel;
 
-
 class ProductController extends Controller
 {
     public function show($id)
@@ -50,7 +49,6 @@ class ProductController extends Controller
             return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties, 'colors' => $colors],200);
 
         } catch (\Exception $e) {
-            dd($e->getMessage());
             return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
         }
     }

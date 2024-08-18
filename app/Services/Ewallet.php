@@ -61,16 +61,17 @@ class Ewallet
         $this->token = $res['data']['access_token'];
     }
 
-    public function createUser($cellphone, $person, $nationalId = null, $f_name = null, $l_name = null, $address = null)
+    public function createUser($cellphone, $ewallet_name = 'Cash', $person = 'natural', $nationalId = null, $f_name = null, $l_name = null, $address = null)
     {
         try {
             $data_json = json_encode([
-                'cellphone'   => $cellphone,
-                'person'      => $person,
-                'f_name'      => $nationalId,
-                'l_name'      => $f_name,
-                'address'     => $l_name,
-                'national_id' => $address,
+                'cellphone'    => $cellphone,
+                'person'       => $person,
+                'f_name'       => $nationalId,
+                'l_name'       => $f_name,
+                'address'      => $l_name,
+                'national_id'  => $address,
+                'ewallet_name' => $ewallet_name
             ]);
 
             $curl = curl_init();
@@ -95,10 +96,11 @@ class Ewallet
 
             $res = json_decode($response, true);
 
-            if (!isset($res['status']) || $res['status'] <> 200) {
+            if ( !isset($res['status']) || $res['status'] <> 200 || !isset($res['data']['uid']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
-            return ['status' => 200, 'msg' => 'عملیات با موفقیت انجام شد.', 'token' => null];
+
+            return ['status' => 200, 'msg' => 'عملیات با موفقیت انجام شد.', 'uid' => $res['data']['uid']];
 
         } catch (\Exception $e) {
             return ['status' => 400, 'msg' => $e->getMessage(), 'token' => null];

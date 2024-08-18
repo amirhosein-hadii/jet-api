@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\V1\Customer;
 
+use App\Events\UserRegistered;
 use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendSMSJob;
@@ -68,6 +69,8 @@ class AuthController extends Controller
             'access_token' => $userToken,
             'token_type' => 'bearer'
         ];
+
+        event(new UserRegistered($user));
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', $data,200);
     }
