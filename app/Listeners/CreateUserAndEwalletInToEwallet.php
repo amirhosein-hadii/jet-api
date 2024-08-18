@@ -15,7 +15,6 @@ class CreateUserAndEwalletInToEwallet
     {
         $user = $event->user;
 
-        DB::table('test')->insert(['name' => 'register', 'res' => $user->cellphone]);
         $service = new Ewallet();
         $res = $service->createUser($user->cellphone);
 
