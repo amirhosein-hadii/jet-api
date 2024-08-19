@@ -18,5 +18,5 @@ Route::get('/location/{id}/regions', 'LocationController@regions');
 
 
 // behpardakht
-Route::get('behpardakht/create/trans/{orderId}', 'BehpardakhtController@createTransactions');
+Route::get('behpardakht/create/trans/{orderId}', 'BehpardakhtController@createTransactions')->middleware('auth:api');
 Route::post('behpardakht/callback/{orderId}', 'BehpardakhtController@callback');

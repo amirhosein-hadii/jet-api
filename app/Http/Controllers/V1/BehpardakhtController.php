@@ -53,7 +53,7 @@ class BehpardakhtController extends Controller
         $transaction = $this->psp->TransactionCallback($request);
 
         if (!$order) {
-            return view('callback-unsuccess', ['message' => 'خطایی رخ داده است', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'cardNumber' => $cardNumber, 'amount' => $transaction->price / 10, 'deepLink' => $deepLink, 'type' => 'business']);
+            return view('callback-unsuccess', ['message' => 'خطایی رخ داده است', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => riyalToToman($transaction->price), 'deepLink' => self::DEEP_LINK]);
         }
 
 
