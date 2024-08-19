@@ -68,6 +68,8 @@ class BehpardakhtController extends Controller
 
         $result = $this->psp->TransactionVerify($orderId, $transaction->ref_id, $transaction->sale_reference);
 
+        dd($result);
+
         if ($result) {
             $order->status = 'success';
             $order->save();

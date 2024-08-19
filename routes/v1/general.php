@@ -19,4 +19,4 @@ Route::get('/location/{id}/regions', 'LocationController@regions');
 
 // behpardakht
 Route::get('behpardakht/create/trans/{orderId}', 'BehpardakhtController@createTransactions');
-Route::post('behpardakht/callback/{orderId}', 'BehpardakhtController@createTransactions');
+Route::post('behpardakht/callback/{orderId}', 'BehpardakhtController@callback');
