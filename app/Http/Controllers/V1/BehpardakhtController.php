@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\Auth;
 
 class BehpardakhtController extends Controller
 {
-    const CALL_BACK = "http://37.32.15.7:8080/api/v1/behpardakht/callback/{orderId}";
+    const CALL_BACK = "http://37.32.15.7:8080/api/v1/behpardakht/callback/";
 
     private $psp;
 
@@ -42,6 +42,7 @@ class BehpardakhtController extends Controller
 
     public function callback($orderId, Request $request)
     {
+        dd($orderId, $request->all());
         $order = Order::query()->find($orderId);
         if (!$order) {
             return ApiResponse::Json(400,'سفارشی یافت نشد.', [],400);
