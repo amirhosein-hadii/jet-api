@@ -26,13 +26,12 @@ class BehpardakhtController extends Controller
 
     public function createTransactions($orderId)
     {
-        $order = Order::query()->find($orderId);
+        $order = Order::query()->with('user')->find($orderId);
         if (!$order) {
             return ApiResponse::Json(400,'سفارشی یافت نشد.', [],400);
         }
 
-        $user = User::query()->first(); // TODO Auth::user()
-        $res = $this->psp->TransactionCreate($order->id, $user, $order->amount, self::CALL_BACK . $order->id);
+        $res = $this->psp->TransactionCreate($order->id, $order->user, $order->amount, self::CALL_BACK . $order->id);
 
         if (!isset($res['status']) || $res['status'] == 400 || is_null($res['refId'])) {
             return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
