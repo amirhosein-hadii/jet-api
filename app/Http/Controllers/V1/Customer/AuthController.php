@@ -80,4 +80,11 @@ class AuthController extends Controller
     {
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', ['user' => Auth::user()],200);
     }
+
+    public function logout()
+    {
+        auth()->logout();
+
+        return ApiResponse::Json(200,'با موفقیت از حساب خود خارج شدید.', [],200);
+    }
 }

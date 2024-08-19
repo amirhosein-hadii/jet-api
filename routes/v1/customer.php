@@ -8,6 +8,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/otp/request', 'AuthController@otpRequest');
     Route::post('/otp/verify', 'AuthController@otpVerification');
     Route::get('/get-user', 'AuthController@getUser')->middleware('auth:api');
+    Route::get('/logout', 'AuthController@logout')->middleware('auth:api');
 });
 
 // Profile
