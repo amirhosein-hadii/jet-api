@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1\Customer;
 
 use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\V1\BehpardakhtController;
 use App\Models\Order;
 use App\Models\UserAddress;
 use App\Models\UsersBasket;
@@ -278,7 +279,7 @@ class InvoiceController extends Controller
 
             UsersInvoicesProduct::query()->insert($insert);
 
-            Order::query()->create([
+            $order = Order::query()->create([
                 'gateway_provider' => 'Mellat',
                 'user_id'          => $userId,
                 'invoice_id'       => $userInvoice->id,
@@ -291,7 +292,8 @@ class InvoiceController extends Controller
 
             DB::commit();
 
-            return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+            $psp = new BehpardakhtController();
+            return $psp->createTransactions($order->id);
 
         } catch (\Exception $e) {
             DB::rollBack();
