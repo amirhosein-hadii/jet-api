@@ -11,12 +11,14 @@ use App\Models\UsersInvoice;
 use App\Services\Behpardakht;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 
 class BehpardakhtController extends Controller
 {
     const CALL_BACK = "http://37.32.15.7:8080/api/v1/behpardakht/callback/";
 
+    const DEEP_LINK = 'http://37.32.15.7:8080/api/v1/invoice';
     private $psp;
 
     public function __construct()
@@ -26,15 +28,17 @@ class BehpardakhtController extends Controller
 
     public function createTransactions($orderId)
     {
-        $order = Order::query()->with('user')->find($orderId);
+        $order = Order::query()->where('user_id', Auth::id())->where('status', 'waiting')->with('user')->find($orderId);
         if (!$order) {
-            return ApiResponse::Json(400,'سفارشی یافت نشد.', [],400);
+//            return ApiResponse::Json(400,'سفارشی یافت نشد.', [],400);
+            return false;
         }
 
         $res = $this->psp->TransactionCreate($order->id, $order->user, $order->amount, self::CALL_BACK . $order->id);
 
         if (!isset($res['status']) || $res['status'] == 400 || is_null($res['refId'])) {
-            return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
+//            return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
+            return false;
         }
 
         return $this->psp->RedirectToGateway($res['refId']);
@@ -42,46 +46,75 @@ class BehpardakhtController extends Controller
 
     public function callback($orderId, Request $request)
     {
-        dd($orderId, $request->all());
-        $order = Order::query()->find($orderId);
+        OrderLog::query()->insert(['order_id', $request->SaleOrderId, 'content' => json_encode($request->all()) ]);
+
+        $order = Order::with('user')->where('id', $orderId)->where('status', 'waiting')->first();
+
+        $transaction = $this->psp->TransactionCallback($request);
+
         if (!$order) {
-            return ApiResponse::Json(400,'سفارشی یافت نشد.', [],400);
+            return view('callback-unsuccess', ['message' => 'خطایی رخ داده است', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'cardNumber' => $cardNumber, 'amount' => $transaction->price / 10, 'deepLink' => $deepLink, 'type' => 'business']);
         }
 
-        if ($request->ResCode != "0") {
-            OrderLog::where('order_id', $request->SaleOrderId)->update([
-                'content' => json_encode($request->all()),
-            ]);
 
-            return $request->ResCode;   // Cancel
+        if (!isset($transaction->ref_id) && !isset($transaction->order_id) && !isset($transaction->price))
+        {
+            if ($transaction == 701)
+            {
+                return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess');
+
+            } elseif ($transaction == 17) {
+                return $this->rejectOrder($order, 'unsuccess', 'callback-cancel');
+
+            } else {
+                return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+            }
         }
 
-        $transaction = (object)[
-            'ref_id' => $request->RefId,
-            'order_id' => $request->SaleOrderId,
-            'sale_reference' => $request->SaleReferenceId,
-            'price' => $request->FinalAmount,
-            'card_holder_pan' => $request->CardHolderInfo ?? null,
-            'card_holder_info' => $request->CardHolderInfo ?? null,
-        ];
+        if ($order->amount <> riyalToToman($transaction->price)) {
+            return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+        }
 
 
-        $result = $this->psp->TransactionVerify($orderId, $transaction->ref_id, $transaction->sale_reference);
+        $result = $this->psp->TransactionVerify($transaction->order_id, $transaction->ref_id, $transaction->sale_reference);
+        if ($result['status'] <> 200) {
+            return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+        }
 
-        dd($result);
+        $donePaymentProcessResult = $this->donePaymentProcess($order);
+        if ($donePaymentProcessResult['status'] <> 200) {
+            return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+        }
 
-        if ($result) {
+        return view('callback-success', ['message' => 'با موفقیت انجام شد', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => $transaction->price / 10, 'deepLink' => self::DEEP_LINK . "/settlement"]);
+    }
+
+    public function rejectOrder($order, $status, $view, $refId = null, $orderId = null, $saleReference= null, $amount = null)
+    {
+        $order->status = $status;
+        $order->save();
+        return view($view, ['message' => 'خطایی رخ داده است', 'refId' => $refId, 'orderId' => $orderId, 'saleReference' => $saleReference, 'amount' => riyalToToman($amount), 'deepLink' => self::DEEP_LINK, 'type' => 'customer']);
+    }
+
+    public function donePaymentProcess($order)
+    {
+        try {
+            DB::beginTransaction();
+
             $order->status = 'success';
             $order->save();
 
-            UsersInvoice::query()->where('order_id', $order->id)->update(['status' => 'success']);
+            $invoice = UsersInvoice::query()->where('id', $order->invoice_id)->where('status', 'waiting')->firstOrFail();
+            $invoice->status = 'success';
+            $invoice->save();
 
-            dd($request->all(), $orderId, 200);
+            DB::commit();
 
+            return ['status' => 200, 'msg' => ''];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return ['status' => 400, 'msg' => $e->getMessage()];
         }
-
-        dd($request->all(), $orderId, 400);
     }
-
-
 }

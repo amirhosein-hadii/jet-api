@@ -19,16 +19,16 @@ class Behpardakht
     public function TransactionCreate($orderId, $payer, $price, $callback)
     {
         $parameters = [
-            'terminalId' => env('BEH_TERMINAL_ID'),
-            'userName' => env('BEH_USERNAME'),
-            'userPassword' => env('BANK_MELLAT_USER_PASSWORD', '54971171'),
-            'orderId' => $orderId,
-            'amount' => $price,
-            'localDate' => date('Ymd'),
-            'localTime' => date('Gis'),
+            'terminalId'     => env('BEH_TERMINAL_ID'),
+            'userName'       => env('BEH_USERNAME'),
+            'userPassword'   => env('BANK_MELLAT_USER_PASSWORD', '54971171'),
+            'orderId'        => $orderId,
+            'amount'         => tomanToriyal($price),
+            'localDate'      => date('Ymd'),
+            'localTime'      => date('Gis'),
             'additionalData' => null,
-            'callBackUrl' => $callback,
-            'payerId' => $payer->id
+            'callBackUrl'    => $callback,
+            'payerId'        => $payer->id
         ];
 
         OrderLog::create([
@@ -79,10 +79,6 @@ class Behpardakht
     public function TransactionCallback(Request $request, $cardNumber = null)
     {
         if ($request->ResCode != "0") {
-            OrderLog::where('order_id', $request->SaleOrderId)->update([
-                'content' => json_encode($request->all()),
-            ]);
-//            return 'خطایی رخ داده است:' . $request->ResCode;
             return $request->ResCode;   // Cancel
         }
 
@@ -109,9 +105,6 @@ class Behpardakht
         $cardHolderInfo = $request->CardHolderInfo ?? null;
         $cardHolderPan = $request->CardHolderPan ?? null;
 
-        OrderLog::where('order_id', $orderId)->update([
-            'reference' => $saleReferenceId
-        ]);
 
         return (object)[
             'ref_id' => $refId,
@@ -125,62 +118,67 @@ class Behpardakht
 
     public function TransactionVerify($orderId, $transactionId, $reference)
     {
-        $parameters = [
-            'terminalId' => env('BEH_TERMINAL_ID'),
-            'userName' => env('BEH_USERNAME'),
-            'userPassword' => env('BANK_MELLAT_USER_PASSWORD', '54971171'),
-            'orderId' => $orderId,
-            'saleOrderId' => $orderId,
-            'saleReferenceId' => $reference,
-        ];
+        try {
+            $parameters = [
+                'terminalId' => env('BEH_TERMINAL_ID'),
+                'userName' => env('BEH_USERNAME'),
+                'userPassword' => env('BANK_MELLAT_USER_PASSWORD', '54971171'),
+                'orderId' => $orderId,
+                'saleOrderId' => $orderId,
+                'saleReferenceId' => $reference,
+            ];
 
-        $client = new \nusoap_client(env('BEH_END_POINT'));
+            $client = new \nusoap_client(env('BEH_END_POINT'));
 
-        $verify = $client->call('bpVerifyRequest', $parameters, env('BEH_NAMESPACE'));
+            $verify = $client->call('bpVerifyRequest', $parameters, env('BEH_NAMESPACE'));
 
-        if ($client->fault) {
+            if ($client->fault) {
+                OrderLog::where('order_id', $orderId)->update([
+                    'content' => json_encode($client->faultstring)
+                ]);
+                throw new \Exception(json_encode($client->faultstring));
+            }
+
+            $err = $client->getError();
+
+            if ($err) {
+                OrderLog::where('order_id', $orderId)->update([
+                    'content' => json_encode($err)
+                ]);
+                throw new \Exception(json_encode($err));
+            }
+
+            // Call the SOAP method
+            $settle = $client->call('bpSettleRequest', $parameters, env('BEH_NAMESPACE'));
+            // Check for a fault
+            if ($client->fault) {
+                OrderLog::where('order_id', $orderId)->update([
+                    'content' => json_encode($client->faultstring)
+                ]);
+                throw new \Exception(json_encode($client->faultstring));
+            }
+
+            $err = $client->getError();
+
+            if ($err) {
+                OrderLog::where('order_id', $orderId)->update([
+                    'content' => json_encode($err)
+                ]);
+                throw new \Exception(json_encode($err));
+            }
+
+            if ($settle == '0' && $verify == '0') {
+                return ['status' => 200, 'msg' => ''];
+            }
+
             OrderLog::where('order_id', $orderId)->update([
-                'content' => json_encode($client->faultstring)
+                'content' => json_encode(['settle' => $settle, 'verify' => $verify])
             ]);
-            return $client->faultstring;
+            throw new \Exception('خطایی رخ داده است.');
+
+        } catch (\Exception $e) {
+            return ['status' => 400, 'msg' => $e->getMessage()];
         }
-
-        $err = $client->getError();
-
-        if ($err) {
-            OrderLog::where('order_id', $orderId)->update([
-                'content' => json_encode($err)
-            ]);
-            return $err;
-        }
-
-        // Call the SOAP method
-        $settle = $client->call('bpSettleRequest', $parameters, env('BEH_NAMESPACE'));
-        // Check for a fault
-        if ($client->fault) {
-            OrderLog::where('order_id', $orderId)->update([
-                'content' => json_encode($client->faultstring)
-            ]);
-            return $client->faultstring;
-        }
-        $err = $client->getError();
-
-        if ($err) {
-            OrderLog::where('order_id', $orderId)->update([
-                'content' => json_encode($err)
-            ]);
-            return $err;
-        }
-
-        if ($settle == '0' && $verify == '0') {
-            return true;
-        }
-
-        OrderLog::where('order_id', $orderId)->update([
-            'content' => json_encode(['settle' => $settle, 'verify' => $verify])
-        ]);
-
-        return 'خطایی رخ داده است.';
     }
 
     public function RedirectToGateway($refId)
@@ -200,4 +198,6 @@ class Behpardakht
 //        }
         return view('gateway.redirect_to_bank', compact('refId'));
     }
+
+
 }

@@ -292,8 +292,12 @@ class InvoiceController extends Controller
 
             DB::commit();
 
-            $psp = new BehpardakhtController();
-            return $psp->createTransactions($order->id);
+//            // Redirect To Gateway
+//            $psp = new BehpardakhtController();
+//            return $psp->createTransactions($order->id);
+
+            return ApiResponse::Json(200, 'عملیات با موقیت انجام شد.', ['order_id' => $order->id], 200);
+
 
         } catch (\Exception $e) {
             DB::rollBack();
