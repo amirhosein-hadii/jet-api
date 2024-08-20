@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers\V1;
 
-use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderLog;
-use App\Models\User;
 use App\Models\UsersInvoice;
 use App\Services\Behpardakht;
 use Illuminate\Http\Request;
@@ -18,7 +16,7 @@ class BehpardakhtController extends Controller
 {
     const CALL_BACK = "http://37.32.15.7:8080/api/v1/behpardakht/callback/";
 
-    const DEEP_LINK = 'http://37.32.15.7:8080/api/v1/invoice';
+    const DEEP_LINK = 'http://37.32.15.7:8080/';
     private $psp;
 
     public function __construct()
@@ -26,22 +24,33 @@ class BehpardakhtController extends Controller
         $this->psp = new Behpardakht();
     }
 
-    public function createTransactions($orderId)
+    public function createTransactions($invoiceId)
     {
-        $order = Order::query()->where('user_id', Auth::id())->where('status', 'waiting')->with('user')->find($orderId);
-        if (!$order) {
-//            return ApiResponse::Json(400,'سفارشی یافت نشد.', [],400);
-            return false;
+        try {
+            $invoice = UsersInvoice::query()->where('user_id', Auth::id())->find($invoiceId);
+            if (!$invoice) {
+                throw new \Exception('فاکتوری یافت نشد.');
+            }
+
+            $order = Order::query()->where('user_id', Auth::id())->with('user')->find($invoice->order_id);
+            if (!$order) {
+                throw new \Exception('سفارشی یافت نشد.');
+
+            } elseif ($order->status == 'success') {
+                throw new \Exception('سفارش قبلا پرداخت شده است.');
+            }
+
+            $res = $this->psp->TransactionCreate($order->id, $order->user, $order->amount, self::CALL_BACK . $order->id);
+
+            if (!isset($res['status']) || $res['status'] == 400 || is_null($res['refId'])) {
+                throw new \Exception('خطا در اتصال به درگاه.');
+            }
+
+            return view('gateway.redirect_to_bank', compact($res['refId']));
+
+        } catch (\Exception $e) {
+            return view('gateway.error_in_redirect_to_bank', ['message' => $e->getMessage(), 'deepLink' => self::DEEP_LINK]);
         }
-
-        $res = $this->psp->TransactionCreate($order->id, $order->user, $order->amount, self::CALL_BACK . $order->id);
-
-        if (!isset($res['status']) || $res['status'] == 400 || is_null($res['refId'])) {
-//            return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
-            return false;
-        }
-
-        return $this->psp->RedirectToGateway($res['refId']);
     }
 
     public function callback($orderId, Request $request)
@@ -53,7 +62,7 @@ class BehpardakhtController extends Controller
         $transaction = $this->psp->TransactionCallback($request);
 
         if (!$order) {
-            return view('callback-unsuccess', ['message' => 'خطایی رخ داده است', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => riyalToToman($transaction->price), 'deepLink' => self::DEEP_LINK]);
+            return view('gateway.callback-unsuccess', ['message' => 'خطایی رخ داده است', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => riyalToToman($transaction->price), 'deepLink' => self::DEEP_LINK]);
         }
 
 
@@ -61,32 +70,32 @@ class BehpardakhtController extends Controller
         {
             if ($transaction == 701)
             {
-                return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess');
+                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess');
 
             } elseif ($transaction == 17) {
-                return $this->rejectOrder($order, 'unsuccess', 'callback-cancel');
+                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-cancel');
 
             } else {
-                return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
             }
         }
 
         if ($order->amount <> riyalToToman($transaction->price)) {
-            return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
         }
 
 
         $result = $this->psp->TransactionVerify($transaction->order_id, $transaction->ref_id, $transaction->sale_reference);
         if ($result['status'] <> 200) {
-            return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
         }
 
         $donePaymentProcessResult = $this->donePaymentProcess($order);
         if ($donePaymentProcessResult['status'] <> 200) {
-            return $this->rejectOrder($order, 'unsuccess', 'callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
         }
 
-        return view('callback-success', ['message' => 'با موفقیت انجام شد', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => $transaction->price / 10, 'deepLink' => self::DEEP_LINK . "/settlement"]);
+        return view('gateway.callback-success', ['message' => 'با موفقیت انجام شد', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => $transaction->price / 10, 'deepLink' => self::DEEP_LINK . "/Settlement"]);
     }
 
     public function rejectOrder($order, $status, $view, $refId = null, $orderId = null, $saleReference= null, $amount = null)

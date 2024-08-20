@@ -180,24 +180,4 @@ class Behpardakht
             return ['status' => 400, 'msg' => $e->getMessage()];
         }
     }
-
-    public function RedirectToGateway($refId)
-    {
-        if (empty($refId)) {
-            return false;
-        }
-
-//        $order = Order::where('ref_id', $refId)->with('customerCard')->with('user')->first();
-//
-//        if (is_object($order) && $order->status == 'success') {
-//            $deepLink = DeeplinkController::getDeeplinkControllerInstance()->checkDeepLink(null, $order);
-//            return view('before_payed_link', ['refId' => $refId, 'orderId' => $order->id, 'saleReference' => $order->sale_reference, 'amount' => $order->amount, 'deepLink' => $deepLink]);
-//
-//        } elseif (is_object($order) && $order->status != 'success') {
-//            return false;
-//        }
-        return view('gateway.redirect_to_bank', compact('refId'));
-    }
-
-
 }

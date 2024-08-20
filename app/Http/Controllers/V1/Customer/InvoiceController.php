@@ -339,9 +339,9 @@ class InvoiceController extends Controller
         throw new \Exception('خطا در محاسبه هزینه پست.' . $weight. $breakable,);
     }
 
-    public function redirectToGateway($orderId)
+    public function redirectToGateway($invoiceId)
     {
-        return (new BehpardakhtController())->createTransactions($orderId);
+        return (new BehpardakhtController())->createTransactions($invoiceId);
     }
 
 }
