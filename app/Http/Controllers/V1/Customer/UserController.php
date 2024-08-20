@@ -126,4 +126,22 @@ class UserController extends Controller
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', $addresses,200);
     }
+
+    public function deleteAddress($addressId)
+    {
+        try {
+            $updateAddress = UserAddress::query()
+                ->where('id', $addressId)
+                ->where('user_id', Auth::id())
+                ->update(['status' => 'inactive']);
+
+            if (!$updateAddress) {
+                throw new \Exception('خطایی رخ داده است.');
+            }
+            return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+
+        } catch (\Exception $exception) {
+            return ApiResponse::Json(400,$exception->getMessage(), [],400);
+        }
+    }
 }
