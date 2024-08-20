@@ -90,7 +90,7 @@ class BehpardakhtController extends Controller
             return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
         }
 
-        $donePaymentProcessResult = $this->donePaymentProcess($order);
+        $donePaymentProcessResult = $this->donePaymentProcess($order, $transaction);
         if ($donePaymentProcessResult['status'] <> 200) {
             return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
         }
@@ -105,12 +105,16 @@ class BehpardakhtController extends Controller
         return view($view, ['message' => 'خطایی رخ داده است', 'refId' => $refId, 'orderId' => $orderId, 'saleReference' => $saleReference, 'amount' => riyalToToman($amount), 'deepLink' => self::DEEP_LINK, 'type' => 'customer']);
     }
 
-    public function donePaymentProcess($order)
+    public function donePaymentProcess($order, $transaction)
     {
         try {
             DB::beginTransaction();
 
-            $order->status = 'success';
+            $order->status           = 'success';
+            $order->ref_id           = $transaction->ref_id;
+            $order->sale_reference   = $transaction->sale_reference;
+            $order->card_holder_info = $transaction->card_holder_pan;
+            $order->card_holder_pan  = $transaction->card_holder_info;
             $order->save();
 
             $invoice = UsersInvoice::query()->where('id', $order->invoice_id)->where('status', 'waiting')->firstOrFail();
