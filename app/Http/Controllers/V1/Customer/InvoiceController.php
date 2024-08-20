@@ -296,7 +296,7 @@ class InvoiceController extends Controller
 //            $psp = new BehpardakhtController();
 //            return $psp->createTransactions($order->id);
 
-            return ApiResponse::Json(200, 'عملیات با موقیت انجام شد.', ['order_id' => $order->id], 200);
+            return ApiResponse::Json(200, 'عملیات با موقیت انجام شد.', ['invoice_id' => $userInvoice->id], 200);
 
 
         } catch (\Exception $e) {
