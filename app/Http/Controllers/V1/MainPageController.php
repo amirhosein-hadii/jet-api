@@ -22,6 +22,14 @@ class MainPageController extends Controller
                         ->orderByDesc('priority')
                         ->select('navbars_products.*', 'products.title', 'products.avatar_link_l', DB::raw('MIN(vendors_products.price) as price'))
                         ->groupBy('navbars_products.id', 'products.title', 'products.avatar_link_l'); // Include all selected columns in the group by
+                },
+                'navbars_brands' => function ($query) {
+                    $query->join('brands', 'brands.id', '=', 'navbars_brands.brand_id')
+                        ->orderByDesc('priority');
+                },
+                'navbars_tags' => function ($query) {
+                    $query->join('tags', 'tags.id', '=', 'navbars_tags.tag_id')
+                        ->orderByDesc('priority');
                 }
             ])
             ->where('which_page', 'home')

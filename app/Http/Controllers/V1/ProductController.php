@@ -15,7 +15,13 @@ class ProductController extends Controller
         try {
             $product = Product::query()
                 ->with([
-                    'images', 'productVendors.vendor:id,name', 'productVendors.color',
+                    'images', 'productVendors.color',
+                    'productVendors' => function ($q) {
+                        $q->with('vendor:id,name,status')
+                            ->join('vendors', 'vendors.id', '=', 'vendors_products.vendor_id')
+                            ->where('vendors.status', 'active');
+                    }
+                    ,
                     'importanceProperties' => function ($q) {
                         $q->join('properties_title', 'properties_title.id', 'products_properties_value.property_title_id')
                             ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
@@ -49,6 +55,7 @@ class ProductController extends Controller
             return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties, 'colors' => $colors],200);
 
         } catch (\Exception $e) {
+            dd($e->getMessage());
             return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
         }
     }

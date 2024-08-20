@@ -22,4 +22,14 @@ class Navbar extends Model
     {
         return $this->hasMany(NavbarBanners::class, 'navbar_id', 'id');
     }
+
+    public function navbars_brands()
+    {
+        return $this->hasMany(NavbarBrand::class, 'navbar_id', 'id');
+    }
+
+    public function navbars_tags()
+    {
+        return $this->hasMany(NavbarTag::class, 'navbar_id', 'id');
+    }
 }
