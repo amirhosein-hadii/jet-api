@@ -117,7 +117,7 @@ class UserController extends Controller
             ->join('location_cities','location_cities.id','=','users_addresses.city_id')
             ->join('location_provinces','location_provinces.id','=','location_cities.province_id')
             ->where('user_id', Auth::id())
-            ->where('status', 'active')
+            ->where('users_addresses.status', 'active')
             ->select('users_addresses.id', 'address', 'postal_code', 'selected',
                 'location_cities.name as city_name', 'location_cities.id as city_id',
                 'location_provinces.name as province_name' ,'location_provinces.id as province_id'
