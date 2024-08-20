@@ -16,7 +16,7 @@ class BehpardakhtController extends Controller
 {
     const CALL_BACK = "http://37.32.15.7:8080/api/v1/behpardakht/callback/";
 
-    const DEEP_LINK = 'http://37.32.15.7:8080/';
+    const DEEP_LINK = 'http://37.32.15.7:3000/';
     private $psp;
 
     public function __construct()
