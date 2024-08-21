@@ -19,7 +19,8 @@ class ProductController extends Controller
                     'productVendors' => function ($q) {
                         $q->with('vendor:id,name,status')
                             ->join('vendors', 'vendors.id', '=', 'vendors_products.vendor_id')
-                            ->where('vendors.status', 'active');
+                            ->where('vendors.status', 'active')
+                            ->select('vendors_products.*');
                     }
                     ,
                     'importanceProperties' => function ($q) {
