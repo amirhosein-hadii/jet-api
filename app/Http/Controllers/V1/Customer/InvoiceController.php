@@ -181,9 +181,12 @@ class InvoiceController extends Controller
 
 
                 // Calculate shipping cost
-                $shippingCost = self::getShippingCost($vendor_product->product->weight_size_level, $vendor_product->product->breakable);
-                $delivery_price = $at_same_city ? $shippingCost : $shippingCost + 50000;
-
+                if ($vendor_product->free_delivery == 'YES') {
+                    $delivery_price = 0;
+                } else {
+                    $shippingCost = self::getShippingCost($vendor_product->product->weight_size_level, $vendor_product->product->breakable);
+                    $delivery_price = $at_same_city ? $shippingCost : $shippingCost + 50000;
+                }
 
                 if (array_key_exists($vendor_product->vendor->id, $vendorsDeliveryPrice)) {
                     $vendorsDeliveryPrice[$vendor_product->vendor->id] = max($vendorsDeliveryPrice[$vendor_product->vendor->id], $delivery_price);
