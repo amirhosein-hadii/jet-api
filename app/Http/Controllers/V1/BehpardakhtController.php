@@ -27,12 +27,17 @@ class BehpardakhtController extends Controller
     public function createTransactions($invoiceId)
     {
         try {
-            $invoice = UsersInvoice::query()->where('user_id', Auth::id())->find($invoiceId);
+            $invoice = UsersInvoice::query()
+                ->where('user_id', Auth::id())
+                ->find($invoiceId);
             if (!$invoice) {
                 throw new \Exception('فاکتوری یافت نشد.');
             }
 
-            $order = Order::query()->where('user_id', Auth::id())->with('user')->find($invoice->order_id);
+            $order = Order::query()->with('user')
+                ->where('user_id', Auth::id())
+                ->where('invoice_id', $invoiceId)
+                ->first();
             if (!$order) {
                 throw new \Exception('سفارشی یافت نشد.');
 
