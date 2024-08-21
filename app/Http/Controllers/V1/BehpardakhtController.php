@@ -51,7 +51,7 @@ class BehpardakhtController extends Controller
                 throw new \Exception('خطا در اتصال به درگاه.');
             }
 
-            return view('gateway.redirect_to_bank', compact($res['refId']));
+            return view('gateway.redirect_to_bank', ['refId' => $res['refId']]);
 
         } catch (\Exception $e) {
             return view('gateway.error_in_redirect_to_bank', ['message' => $e->getMessage(), 'deepLink' => self::DEEP_LINK]);
@@ -60,7 +60,7 @@ class BehpardakhtController extends Controller
 
     public function callback($orderId, Request $request)
     {
-        OrderLog::query()->insert(['order_id', $request->SaleOrderId, 'content' => json_encode($request->all()) ]);
+        OrderLog::query()->insert(['order_id' => $request->SaleOrderId, 'content' => json_encode($request->all()) ]);
 
         $order = Order::with('user')->where('id', $orderId)->where('status', 'waiting')->first();
 
