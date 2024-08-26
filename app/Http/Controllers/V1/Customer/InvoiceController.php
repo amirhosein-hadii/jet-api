@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Validator;
 class InvoiceController extends Controller
 {
     const SHIPPING_DATE_FROM = 5; // deliver after 5 days
-    const SHIPPING_DATE_DILAY = 3; // deliver after 5 days
+    const SHIPPING_DATE_DILAY = 3;
 
     const SHIPPING_DATE_DILAY_FOR_NOT_IN_SAME_CITY = 2;
 
@@ -295,12 +295,7 @@ class InvoiceController extends Controller
 
             DB::commit();
 
-//            // Redirect To Gateway
-//            $psp = new BehpardakhtController();
-//            return $psp->createTransactions($order->id);
-
             return ApiResponse::Json(200, 'عملیات با موقیت انجام شد.', ['invoice_id' => $userInvoice->id], 200);
-
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -345,6 +340,33 @@ class InvoiceController extends Controller
     public function redirectToGateway($invoiceId)
     {
         return (new BehpardakhtController())->createTransactions($invoiceId);
+    }
+
+    public function show($id)
+    {
+        $userInvoiceProduct = UsersInvoicesProduct::query()
+            ->join('users_addresses', 'users_invoices_products.user_address_id','=', 'users_addresses.id')
+            ->join('vendors_products', 'vendors_products.id', 'users_invoices_products.vendor_product_id')
+            ->join('products', 'products.id','=', 'vendors_products.product_id')
+            ->join('vendors', 'vendors.id','=', 'vendors_products.vendor_id')
+            ->join('colors_sub_categories', 'vendors_products.sub_color_id','=', 'colors_sub_categories.id')
+            ->where('users_invoices_products.invoice_id', $id)
+            ->where('users_invoices_products.user_id', Auth::id())
+            ->select(
+                'users_invoices_products.id', 'users_invoices_products.deliver_date_from', 'users_invoices_products.deliver_date_to',
+                'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
+                'vendors.name as vendor_name', 'vendors.tel as vendor_tel',
+                'products.title as product_title',
+                'users_addresses.address'
+            )
+            ->get();
+
+        $userInvoiceProduct->map(function ($item) {
+            $item->deliver_date_from = convertReelToDashedJalalian($item->deliver_date_from);
+            $item->deliver_date_to = convertReelToDashedJalalian($item->deliver_date_to);
+        });
+
+        return ApiResponse::Json(200, '', ['invoice_product' => $userInvoiceProduct], 200);
     }
 
 }

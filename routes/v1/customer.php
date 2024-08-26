@@ -34,5 +34,6 @@ Route::prefix('invoice')/*->middleware('auth:api')*/->group(function () {
     Route::post('/create', 'InvoiceController@createInvoice');
     Route::post('/bill', 'InvoiceController@bill');
     Route::get('/redirect-to-gateway/{orderId}', 'InvoiceController@redirectToGateway');
+    Route::get('/show/{id}', 'InvoiceController@show');
 
 });

@@ -27,7 +27,7 @@ class AuthController extends Controller
 
         $user = User::query()->firstOrCreate(
                 ['cellphone' => $request->mobile],
-                ['referral_code' => time()]
+                ['referral_code' => rand(100000000000, 999999999999)]
             );
 
         $user->otp_code = mt_rand(1111, 9999);

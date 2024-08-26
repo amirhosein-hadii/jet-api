@@ -106,4 +106,46 @@ class Ewallet
             return ['status' => 400, 'msg' => $e->getMessage(), 'token' => null];
         }
     }
+
+    public function createTransaction($ewalletId, $type, $amount)
+    {
+        try {
+            $data_json = json_encode([
+                'ewallet_id'   => $ewalletId,
+                'type'         => $type,
+                'amount'       => $amount,
+            ]);
+
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, self::base_url . "transaction/insert");
+            curl_setopt($curl, CURLOPT_POST, 1);
+            curl_setopt($curl, CURLOPT_POSTFIELDS, $data_json);
+
+            $header = array(
+                'Accept-Language: fa',
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $this->token
+            );
+
+            curl_setopt($curl, CURLOPT_HTTPHEADER, $header);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, true);
+            $response = curl_exec($curl);
+
+            if ($response === false) {
+                throw new \Exception(curl_error($curl), curl_errno($curl));
+            }
+            curl_close($curl);
+
+            $res = json_decode($response, true);
+
+            if ( !isset($res['status']) || $res['status'] <> 200 || !isset($res['data']['ewallet_transaction_id']) ) {
+                throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
+            }
+
+            return ['status' => 200, 'msg' => 'عملیات با موفقیت انجام شد.', 'ewallet_transaction_id' => $res['data']['ewallet_transaction_id']];
+
+        } catch (\Exception $e) {
+            return ['status' => 400, 'msg' => $e->getMessage()];
+        }
+    }
 }
