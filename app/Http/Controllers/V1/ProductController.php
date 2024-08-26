@@ -49,6 +49,7 @@ class ProductController extends Controller
                         )
                         ->orderBy('priority', 'desc');
                 }])
+                ->orderBy('priority', 'desc')
                 ->get();
 
             $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('sub_color_id'))->select('id', 'code', 'name')->get();
