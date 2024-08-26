@@ -132,6 +132,9 @@ class BehpardakhtController extends Controller
 
         } catch (\Exception $exception) {
             DB::rollBack();
+            $order->status           = 'unsuccess';
+            $order->description      = 'ewallet_cashed_in_successfully_but_not_banking_verified';
+            $order->save();
             return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
         }
 
