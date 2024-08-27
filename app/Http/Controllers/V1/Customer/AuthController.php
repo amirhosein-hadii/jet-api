@@ -70,7 +70,9 @@ class AuthController extends Controller
             'token_type' => 'bearer'
         ];
 
-        event(new UserRegistered($user));
+        if ($user->wasRecentlyCreated) {
+            event(new UserRegistered($user));
+        }
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', $data,200);
     }
