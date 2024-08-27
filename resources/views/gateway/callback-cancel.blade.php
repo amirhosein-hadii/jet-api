@@ -21,7 +21,7 @@
             text-align: center;
         }
         .main{
-            margin: 20% auto;
+            margin: 10% auto;
 
         }
         .exclaim{
@@ -78,7 +78,7 @@
         }
         .button-holder{
             width: 100%;
-            margin-top: 25%;
+            margin-top: 32px;
             text-align: center;
         }
         table{

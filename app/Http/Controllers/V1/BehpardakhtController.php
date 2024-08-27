@@ -121,6 +121,7 @@ class BehpardakhtController extends Controller
             $invoice = UsersInvoice::query()->where('id', $order->invoice_id)->where('status', 'waiting')->firstOrFail();
             $invoice->status = 'success';
             $invoice->save();
+            // TODO consume inventory_num
 
             $PaymentConsumeRes = $ewallet->createTransaction($userEwallet->id, 'payment_consume', $order->amount);
             if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['data']['ewallet_transaction_id']) ) {

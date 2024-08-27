@@ -20,9 +20,9 @@ class ProductController extends Controller
                         $q->with('vendor:id,name,status')
                             ->join('vendors', 'vendors.id', '=', 'vendors_products.vendor_id')
                             ->where('vendors.status', 'active')
+                            ->orderByDesc('inventory_num')
                             ->select('vendors_products.*');
-                    }
-                    ,
+                    },
                     'importanceProperties' => function ($q) {
                         $q->join('properties_title', 'properties_title.id', 'products_properties_value.property_title_id')
                             ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
@@ -52,12 +52,20 @@ class ProductController extends Controller
                 ->orderBy('priority', 'desc')
                 ->get();
 
-            $colors = ColorsSubCategories::query()->whereIn('id', $product->productVendors->pluck('sub_color_id'))->select('id', 'code', 'name')->get();
+            $subColors = $product->productVendors
+                ->sortByDesc('inventory_num')
+                ->pluck('sub_color_id', 'inventory_num')->toArray();
+
+            $colors = ColorsSubCategories::query()
+                ->whereIn('id', $subColors)
+                ->select('id', 'code', 'name')
+                ->orderByRaw("FIELD(id, " . implode(',', $subColors) . ")")
+                ->get();
 
             return ApiResponse::Json(200,'', ['product' => $product, 'properties' => $properties, 'colors' => $colors],200);
 
         } catch (\Exception $e) {
-            dd($e->getMessage());
+//            dd($e->getMessage());
             return ApiResponse::Json(400,'خطایی رخ داده است.', [],400);
         }
     }
@@ -67,6 +75,9 @@ class ProductController extends Controller
     {
         $products = Product::query()
             ->with(['importanceProperties'])
+            ->whereHas('vendors', function ($query) {
+                $query->where('vendors.status', 'active');
+            })
             ->where('products.status', 'active')
             ->select('id', 'brand_id', 'title', 'tag_id', 'avatar_link_l')
             ->orderByDesc('id')

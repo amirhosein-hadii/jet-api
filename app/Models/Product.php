@@ -32,4 +32,9 @@ class Product extends Model
     public function productVendors() {
         return $this->hasMany(VendorProduct::class,'product_id','id');
     }
+
+    public function vendors()
+    {
+        return $this->belongsToMany(Vendor::class, 'vendors_products', 'product_id', 'vendor_id');
+    }
 }
