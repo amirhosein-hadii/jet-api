@@ -6,6 +6,7 @@ use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\V1\BehpardakhtController;
 use App\Models\Order;
+use App\Models\ProductsInventoryNumChanges;
 use App\Models\UserAddress;
 use App\Models\UsersBasket;
 use App\Models\UsersInvoice;
@@ -27,6 +28,33 @@ class InvoiceController extends Controller
 
     protected $addresses;
     protected $vendor_products_id;
+
+    public function show($id)
+    {
+        $userInvoiceProduct = UsersInvoicesProduct::query()
+            ->join('users_addresses', 'users_invoices_products.user_address_id','=', 'users_addresses.id')
+            ->join('vendors_products', 'vendors_products.id', 'users_invoices_products.vendor_product_id')
+            ->join('products', 'products.id','=', 'vendors_products.product_id')
+            ->join('vendors', 'vendors.id','=', 'vendors_products.vendor_id')
+            ->join('colors_sub_categories', 'vendors_products.sub_color_id','=', 'colors_sub_categories.id')
+            ->where('users_invoices_products.invoice_id', $id)
+            ->where('users_invoices_products.user_id', Auth::id())
+            ->select(
+                'users_invoices_products.id', 'users_invoices_products.deliver_date_from', 'users_invoices_products.deliver_date_to',
+                'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
+                'vendors.name as vendor_name', 'vendors.tel as vendor_tel',
+                'products.title as product_title',
+                'users_addresses.address'
+            )
+            ->get();
+
+        $userInvoiceProduct->map(function ($item) {
+            $item->deliver_date_from = convertReelToDashedJalalian($item->deliver_date_from);
+            $item->deliver_date_to = convertReelToDashedJalalian($item->deliver_date_to);
+        });
+
+        return ApiResponse::Json(200, '', ['invoice_product' => $userInvoiceProduct], 200);
+    }
 
     public function preCreateInvoice()
     {
@@ -342,31 +370,20 @@ class InvoiceController extends Controller
         return (new BehpardakhtController())->createTransactions($invoiceId);
     }
 
-    public function show($id)
+    public static function consumeInventoryNumAfterPaid($invoiceProducts)
     {
-        $userInvoiceProduct = UsersInvoicesProduct::query()
-            ->join('users_addresses', 'users_invoices_products.user_address_id','=', 'users_addresses.id')
-            ->join('vendors_products', 'vendors_products.id', 'users_invoices_products.vendor_product_id')
-            ->join('products', 'products.id','=', 'vendors_products.product_id')
-            ->join('vendors', 'vendors.id','=', 'vendors_products.vendor_id')
-            ->join('colors_sub_categories', 'vendors_products.sub_color_id','=', 'colors_sub_categories.id')
-            ->where('users_invoices_products.invoice_id', $id)
-            ->where('users_invoices_products.user_id', Auth::id())
-            ->select(
-                'users_invoices_products.id', 'users_invoices_products.deliver_date_from', 'users_invoices_products.deliver_date_to',
-                'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
-                'vendors.name as vendor_name', 'vendors.tel as vendor_tel',
-                'products.title as product_title',
-                'users_addresses.address'
-            )
-            ->get();
+        foreach ($invoiceProducts as $invoiceProduct)
+        {
+            $changes[] = [
+                'product_vendor_id'         => $invoiceProduct->vendor_product_id,
+                'old_inventory_num'         => $invoiceProduct->vendorProduct->inventory_num,
+                'new_inventory_num'         => $invoiceProduct->vendorProduct->inventory_num - 1,
+                'users_invoices_product_id' => $invoiceProduct->id,
+            ];
 
-        $userInvoiceProduct->map(function ($item) {
-            $item->deliver_date_from = convertReelToDashedJalalian($item->deliver_date_from);
-            $item->deliver_date_to = convertReelToDashedJalalian($item->deliver_date_to);
-        });
+            VendorProduct::query()->where('id', $invoiceProduct->vendorProduct->id)->decrement('inventory_num');
+        }
 
-        return ApiResponse::Json(200, '', ['invoice_product' => $userInvoiceProduct], 200);
+        ProductsInventoryNumChanges::query()->insert($changes);
     }
-
 }

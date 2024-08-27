@@ -25,7 +25,7 @@ class UsersInvoicesProduct extends Model
 
     public function vendorProduct()
     {
-        return $this->belongsTo(VendorProduct::class, 'product_id', 'id');
+        return $this->belongsTo(VendorProduct::class, 'vendor_product_id', 'id');
     }
 
 }

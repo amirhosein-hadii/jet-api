@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\V1\Customer\InvoiceController;
 use App\Models\Order;
 use App\Models\OrderLog;
 use App\Models\UserEwallet;
@@ -118,10 +119,12 @@ class BehpardakhtController extends Controller
             $order->card_holder_pan  = $transaction->card_holder_info;
             $order->save();
 
-            $invoice = UsersInvoice::query()->where('id', $order->invoice_id)->where('status', 'waiting')->firstOrFail();
+            $invoice = UsersInvoice::query()->with('userInvoiceProducts.vendorProduct')->where('id', $order->invoice_id)->where('status', 'waiting')->firstOrFail();
             $invoice->status = 'success';
             $invoice->save();
-            // TODO consume inventory_num
+
+            //  consume inventory_num
+            InvoiceController::consumeInventoryNumAfterPaid($invoice->userInvoiceProducts);
 
             $PaymentConsumeRes = $ewallet->createTransaction($userEwallet->id, 'payment_consume', $order->amount);
             if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['data']['ewallet_transaction_id']) ) {

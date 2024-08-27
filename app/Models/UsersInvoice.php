@@ -23,4 +23,9 @@ class UsersInvoice extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'id');
     }
+
+    public function userInvoiceProducts()
+    {
+        return $this->hasMany(UsersInvoicesProduct::class, 'invoice_id','id');
+    }
 }
