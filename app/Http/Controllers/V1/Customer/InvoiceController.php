@@ -38,7 +38,7 @@ class InvoiceController extends Controller
             ->join('vendors', 'vendors.id','=', 'vendors_products.vendor_id')
             ->join('colors_sub_categories', 'vendors_products.sub_color_id','=', 'colors_sub_categories.id')
             ->where('users_invoices_products.invoice_id', $id)
-//            ->where('users_invoices_products.user_id', Auth::id())
+            ->where('users_invoices_products.user_id', Auth::id())
             ->select(
                 'users_invoices_products.id', 'users_invoices_products.deliver_date_from', 'users_invoices_products.deliver_date_to',
                 'users_invoices_products.origin_price', 'users_invoices_products.paid_price', 'users_invoices_products.delivery_price',
