@@ -62,7 +62,7 @@ class InvoiceController extends Controller
             'total_products_amount'   => $totalProductAmount,
             'total_deliveries_amount' => $totalDeliveriesAmount,
             'total_amount'            => $totalAmount,
-            'invoice_product' => $userInvoiceProduct
+            'invoice_product'         => $userInvoiceProduct
         ];
 
         return ApiResponse::Json(200, '', $data, 200);
