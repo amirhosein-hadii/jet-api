@@ -38,9 +38,10 @@ class InvoiceController extends Controller
             ->join('vendors', 'vendors.id','=', 'vendors_products.vendor_id')
             ->join('colors_sub_categories', 'vendors_products.sub_color_id','=', 'colors_sub_categories.id')
             ->where('users_invoices_products.invoice_id', $id)
-            ->where('users_invoices_products.user_id', Auth::id())
+//            ->where('users_invoices_products.user_id', Auth::id())
             ->select(
                 'users_invoices_products.id', 'users_invoices_products.deliver_date_from', 'users_invoices_products.deliver_date_to',
+                'users_invoices_products.origin_price', 'users_invoices_products.paid_price', 'users_invoices_products.delivery_price',
                 'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
                 'vendors.name as vendor_name', 'vendors.tel as vendor_tel',
                 'products.title as product_title',
@@ -53,7 +54,18 @@ class InvoiceController extends Controller
             $item->deliver_date_to = convertReelToDashedJalalian($item->deliver_date_to);
         });
 
-        return ApiResponse::Json(200, '', ['invoice_product' => $userInvoiceProduct], 200);
+        $totalDeliveriesAmount = $userInvoiceProduct->sum('delivery_price');
+        $totalProductAmount = $userInvoiceProduct->sum('origin_price') - $totalDeliveriesAmount;
+        $totalAmount = $userInvoiceProduct->sum('paid_price');
+
+        $data = [
+            'total_products_amount'   => $totalProductAmount,
+            'total_deliveries_amount' => $totalDeliveriesAmount,
+            'total_amount'            => $totalAmount,
+            'invoice_product' => $userInvoiceProduct
+        ];
+
+        return ApiResponse::Json(200, '', $data, 200);
     }
 
     public function preCreateInvoice()

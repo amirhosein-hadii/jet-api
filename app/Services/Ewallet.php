@@ -61,16 +61,15 @@ class Ewallet
         $this->token = $res['data']['access_token'];
     }
 
-    public function createUser($cellphone, $ewallet_name = 'Cash', $person = 'natural', $nationalId = null, $f_name = null, $l_name = null, $address = null)
+    public function createUser($cellphone, $ewallet_name = 'Cash', $person = 'natural', $nationalId = null, $f_name = null, $l_name = null)
     {
         try {
             $data_json = json_encode([
                 'cellphone'    => $cellphone,
                 'person'       => $person,
-                'f_name'       => $nationalId,
-                'l_name'       => $f_name,
-                'address'      => $l_name,
-                'national_id'  => $address,
+                'f_name'       => $f_name,
+                'l_name'       => $l_name,
+                'national_id'  => $nationalId,
                 'ewallet_name' => $ewallet_name
             ]);
 

@@ -70,7 +70,7 @@ class AuthController extends Controller
             'token_type' => 'bearer'
         ];
 
-        if ($user->wasRecentlyCreated) {
+        if ( is_null($user->ewallet_user_id) ) {
             event(new UserRegistered($user));
         }
 
