@@ -99,7 +99,7 @@ class Ewallet
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
 
-            return ['status' => 200, 'msg' => 'عملیات با موفقیت انجام شد.', 'uid' => $res['data']['uid']];
+            return ['status' => 200, 'msg' => 'عملیات با موفقیت انجام شد.', 'uid' => $res['data']['uid'], 'ewallet_id' => $res['data']['ewallet_id']];
 
         } catch (\Exception $e) {
             return ['status' => 400, 'msg' => $e->getMessage(), 'token' => null];
