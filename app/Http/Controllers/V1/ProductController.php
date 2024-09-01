@@ -75,37 +75,45 @@ class ProductController extends Controller
 
     public function list(Request $request)
     {
-        $tag_id = $request->tag_id;
-        $products = DB::select("call List_of_businesses_based_on_tag_id($tag_id)");
+        $products = Product::query()
+            ->with(['importanceProperties'])
+            ->join('vendors_products', 'vendors_products.product_id', 'products.id')
+            ->whereHas('vendors', function ($query) {
+                $query->where('vendors.status', 'active');
+            })
+            ->when($request->filled('brand_id'), function ($q) use ($request) {
+                return $q->where('products.brand_id', $request->brand_id);
+            })
+            ->when($request->filled('price_from'), function ($q) use ($request) {
+                return $q->where('vendors_products.price', '>=', $request->price_from);
+            })
+            ->when($request->filled('price_to'), function ($q) use ($request) {
+                return $q->where('vendors_products.price', '<=', $request->price_to);
+            })
+            ->when($request->filled('tag_id'), function ($q) use ($request) {
+                $tagsId = DB::select("
+                        WITH RECURSIVE cte (id, name, parent_id, orig_id) AS (
+                            SELECT id, name, parent_id, id AS orig_id
+                            FROM tags
+                            WHERE id = ?
+                            UNION ALL
+                            SELECT t1.id, t1.name, t1.parent_id, t2.orig_id
+                            FROM tags t1
+                            INNER JOIN cte t2 ON t2.id = t1.parent_id
+                        )
+                        SELECT id FROM cte
+                    ", [$request->tag_id]);
 
-        $filteredProducts = array_map(function($product) {
-            return [
-                'id'            => $product->id,
-                'brand_id'      => $product->brand_id,
-                'tag_id'        => $product->tag_id,
-                'title'         => $product->title,
-                'avatar_link_l' => $product->avatar_link_l,
-            ];
-        }, $products);
+                $tagsId = collect($tagsId)->pluck('id')->toArray();
 
+                return $q->whereIn('products.tag_id', $tagsId);
+            })
+            ->where('products.status', 'active')
+            ->groupBy('products.id')
+            ->select('products.id', 'products.brand_id', 'products.title', 'products.tag_id', 'products.avatar_link_l', DB::raw('MIN(price) as price'))
+            ->orderByDesc('id')
+            ->paginate(10);
 
-//        $products = Product::query()
-//            ->with(['importanceProperties'])
-//            ->whereHas('vendors', function ($query) {
-//                $query->where('vendors.status', 'active');
-//            })
-//            ->when($request->filled('brand_id'), function ($q) use ($request) {
-//                return $q->where('products.brand_id', $request->brand_id);
-//            })
-//            ->when($request->filled('price_from'), function ($q) use ($request) {
-//                return $q->join('')
-//                    ->where('brand_id', $request->brand_id);
-//            })
-//            ->where('products.status', 'active')
-//            ->select('products.id', 'products.brand_id', 'products.title', 'products.tag_id', 'products.avatar_link_l')
-//            ->orderByDesc('id')
-//            ->paginate(10);
-
-        return ApiResponse::Json(200,'', ['products' => $filteredProducts],200);
+        return ApiResponse::Json(200,'', ['products' => $products],200);
     }
 }
