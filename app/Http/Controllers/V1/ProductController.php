@@ -32,6 +32,7 @@ class ProductController extends Controller
                             )->orderBy('priority', 'desc');
                     }
                 ])
+                ->where('products.status', 'active')
                 ->findOrFail($id);
 
             $properties = PropertiesSuperLabel::query()
