@@ -7,6 +7,8 @@ use App\Http\Controllers\Controller;
 use App\Models\ColorsSubCategories;
 use App\Models\Product;
 use App\Models\PropertiesSuperLabel;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -71,18 +73,39 @@ class ProductController extends Controller
     }
 
 
-    public function list()
+    public function list(Request $request)
     {
-        $products = Product::query()
-            ->with(['importanceProperties'])
-            ->whereHas('vendors', function ($query) {
-                $query->where('vendors.status', 'active');
-            })
-            ->where('products.status', 'active')
-            ->select('id', 'brand_id', 'title', 'tag_id', 'avatar_link_l')
-            ->orderByDesc('id')
-            ->paginate(10);
+        $tag_id = $request->tag_id;
+        $products = DB::select("call List_of_businesses_based_on_tag_id($tag_id)");
 
-        return ApiResponse::Json(200,'', ['products' => $products],200);
+        $filteredProducts = array_map(function($product) {
+            return [
+                'id'            => $product->id,
+                'brand_id'      => $product->brand_id,
+                'tag_id'        => $product->tag_id,
+                'title'         => $product->title,
+                'avatar_link_l' => $product->avatar_link_l,
+            ];
+        }, $products);
+
+
+//        $products = Product::query()
+//            ->with(['importanceProperties'])
+//            ->whereHas('vendors', function ($query) {
+//                $query->where('vendors.status', 'active');
+//            })
+//            ->when($request->filled('brand_id'), function ($q) use ($request) {
+//                return $q->where('products.brand_id', $request->brand_id);
+//            })
+//            ->when($request->filled('price_from'), function ($q) use ($request) {
+//                return $q->join('')
+//                    ->where('brand_id', $request->brand_id);
+//            })
+//            ->where('products.status', 'active')
+//            ->select('products.id', 'products.brand_id', 'products.title', 'products.tag_id', 'products.avatar_link_l')
+//            ->orderByDesc('id')
+//            ->paginate(10);
+
+        return ApiResponse::Json(200,'', ['products' => $filteredProducts],200);
     }
 }

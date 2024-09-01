@@ -11,5 +11,6 @@ class UserEwallet extends Model
 
     protected $table = 'users_ewallets';
 
+    protected $guarded = [];
 
 }
