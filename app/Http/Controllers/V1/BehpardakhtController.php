@@ -103,7 +103,7 @@ class BehpardakhtController extends Controller
             $ewallet = new Ewallet();
             $CashInRes = $ewallet->createTransaction($userEwallet->ewallet_id, 'cache-in', $order->amount);
 
-            if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['data']['ewallet_transaction_id']) ) {
+            if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
 
@@ -131,7 +131,7 @@ class BehpardakhtController extends Controller
 
             // Payment consume
             $PaymentConsumeRes = $ewallet->createTransaction($userEwallet->ewallet_id, 'payment_consume', $order->amount);
-            if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['data']['ewallet_transaction_id']) ) {
+            if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
 
