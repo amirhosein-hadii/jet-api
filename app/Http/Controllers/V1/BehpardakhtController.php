@@ -130,7 +130,7 @@ class BehpardakhtController extends Controller
             InvoiceController::consumeInventoryNumAfterPaid($invoice->userInvoiceProducts);
 
             // Payment consume
-            $PaymentConsumeRes = $ewallet->createTransaction($userEwallet->id, 'payment_consume', $order->amount);
+            $PaymentConsumeRes = $ewallet->createTransaction($userEwallet->ewallet_id, 'payment_consume', $order->amount);
             if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['data']['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
