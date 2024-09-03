@@ -7,6 +7,7 @@ use App\Http\Controllers\V1\Customer\InvoiceController;
 use App\Models\Order;
 use App\Models\OrderLog;
 use App\Models\UserEwallet;
+use App\Models\UsersBasket;
 use App\Models\UsersInvoice;
 use App\Services\Behpardakht;
 use App\Services\Ewallet;
@@ -93,6 +94,7 @@ class BehpardakhtController extends Controller
         }
 
         try {
+            // CashIn
             $userEwallet = UserEwallet::query()->where('user_id', $order->user_id)->first();
             if (!$userEwallet) {
                 return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
@@ -104,6 +106,7 @@ class BehpardakhtController extends Controller
             if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['data']['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
+
 
             $result = $this->psp->TransactionVerify($transaction->order_id, $transaction->ref_id, $transaction->sale_reference);
             if ($result['status'] <> 200) {
@@ -126,10 +129,14 @@ class BehpardakhtController extends Controller
             //  consume inventory_num
             InvoiceController::consumeInventoryNumAfterPaid($invoice->userInvoiceProducts);
 
+            // Payment consume
             $PaymentConsumeRes = $ewallet->createTransaction($userEwallet->id, 'payment_consume', $order->amount);
             if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['data']['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
+
+            // Clear basket
+            UsersBasket::query()->where('user_id', $order->user_id)->where('next_purchase', 0)->delete();
 
             DB::commit();
 

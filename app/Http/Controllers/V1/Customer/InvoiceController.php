@@ -331,8 +331,6 @@ class InvoiceController extends Controller
                 'status'           => 'waiting',
             ]);
 
-            UsersBasket::query()->where('user_id', $userId)->delete();
-
             DB::commit();
 
             return ApiResponse::Json(200, 'عملیات با موقیت انجام شد.', ['invoice_id' => $userInvoice->id], 200);
