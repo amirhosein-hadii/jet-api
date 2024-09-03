@@ -101,7 +101,7 @@ class BehpardakhtController extends Controller
             }
 
             $ewallet = new Ewallet();
-            $CashInRes = $ewallet->createTransaction($userEwallet->id, 'cache-in', $order->amount);
+            $CashInRes = $ewallet->createTransaction($userEwallet->ewallet_id, 'cache-in', $order->amount);
 
             if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['data']['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
@@ -146,7 +146,7 @@ class BehpardakhtController extends Controller
             $order->status           = 'unsuccess';
             $order->description      = 'ewallet_cashed_in_successfully_but_not_banking_verified';
             $order->save();
-            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
         }
 
         return view('gateway.callback-success', ['message' => 'با موفقیت انجام شد', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => $transaction->price / 10, 'deepLink' => self::DEEP_LINK . "/Settlement/" . $order->invoice_id]);
