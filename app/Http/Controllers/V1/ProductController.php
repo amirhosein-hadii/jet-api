@@ -17,19 +17,13 @@ class ProductController extends Controller
         try {
             $product = Product::query()
                 ->with([
-                    'images', 'productVendors.color',
+                    'images', 'productVendors.color', 'importanceProperties',
                     'productVendors' => function ($q) {
                         $q->with('vendor:id,name,status')
                             ->join('vendors', 'vendors.id', '=', 'vendors_products.vendor_id')
                             ->where('vendors.status', 'active')
                             ->orderByDesc('inventory_num')
                             ->select('vendors_products.*');
-                    },
-                    'importanceProperties' => function ($q) {
-                        $q->join('properties_title', 'properties_title.id', 'products_properties_value.property_title_id')
-                            ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
-                                'properties_title.name as title_name', 'properties_title.priority', 'properties_title.id as title_id'
-                            )->orderBy('priority', 'desc');
                     }
                 ])
                 ->where('products.status', 'active')

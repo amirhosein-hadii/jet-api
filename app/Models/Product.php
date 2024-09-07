@@ -26,7 +26,13 @@ class Product extends Model
     }
 
     public function importanceProperties() {
-        return $this->hasMany(ProductsPropertiesValue::class,'product_id','id')->where('importance',1);
+        return $this->hasMany(ProductsPropertiesValue::class,'product_id','id')
+            ->join('properties_title', 'properties_title.id', 'products_properties_value.property_title_id')
+            ->select('products_properties_value.name as value_name', 'products_properties_value.product_id',
+                'properties_title.name as title_name', 'properties_title.priority', 'properties_title.id as title_id'
+            )
+            ->orderBy('priority', 'desc')
+            ->where('importance',1);
     }
 
     public function productVendors() {
