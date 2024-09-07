@@ -85,6 +85,9 @@ class ProductController extends Controller
             ->when($request->filled('brand_id'), function ($q) use ($request) {
                 return $q->where('products.brand_id', $request->brand_id);
             })
+            ->when($request->filled('title'), function ($q) use ($request) {
+                return $q->where('products.title', 'like', $request->title . "%");
+            })
             ->when($request->filled('price_from'), function ($q) use ($request) {
                 return $q->where('vendors_products.price', '>=', $request->price_from);
             })
