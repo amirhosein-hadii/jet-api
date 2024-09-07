@@ -137,7 +137,7 @@ class InvoiceController extends Controller
 
             // Check address
             $selectedAddresses = array_unique($items->pluck('user_address_id')->toArray());
-            $addresses = UserAddress::query()->where('user_id', $userId)->whereIn('id', $selectedAddresses)->select('id', 'city_id')->get();
+            $addresses = UserAddress::query()->where('user_id', $userId)->where('status', 'active')->whereIn('id', $selectedAddresses)->select('id', 'city_id')->get();
             if (!haveSameValues($selectedAddresses, $addresses->pluck('id')->toArray())) {
                 return ['status' => 400, 'msg' => 'آدرس وارد شده اشتباه است.'];
             }

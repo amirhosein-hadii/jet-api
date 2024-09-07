@@ -60,7 +60,6 @@ class UserController extends Controller
             $userId = Auth::id();
 
             $inactiveAddress = UserAddress::query()
-                ->where('id', $id)
                 ->where('user_id', $userId)
                 ->update(['status' => 'inactive']);
 
