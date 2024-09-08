@@ -71,7 +71,7 @@ class BehpardakhtController extends Controller
         $transaction = $this->psp->TransactionCallback($request);
 
         if (!$order) {
-            return view('gateway.callback-unsuccess', ['message' => 'خطایی رخ داده است', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => riyalToToman($transaction->price), 'deepLink' => self::DEEP_LINK]);
+            return view('gateway.callback-unsuccess', ['message' => 'خطایی رخ داده است', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => $transaction->price, 'deepLink' => self::DEEP_LINK]);
         }
 
 
@@ -85,19 +85,19 @@ class BehpardakhtController extends Controller
                 return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-cancel');
 
             } else {
-                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
             }
         }
 
         if ($order->amount <> riyalToToman($transaction->price)) {
-            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
         }
 
         try {
             // CashIn
             $userEwallet = UserEwallet::query()->where('user_id', $order->user_id)->first();
             if (!$userEwallet) {
-                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, riyalToToman($transaction->price));
+                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
             }
 
             $ewallet = new Ewallet();
@@ -149,7 +149,7 @@ class BehpardakhtController extends Controller
             return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
         }
 
-        return view('gateway.callback-success', ['message' => 'با موفقیت انجام شد', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => $transaction->price / 10, 'deepLink' => self::DEEP_LINK . "/Settlement/" . $order->invoice_id]);
+        return view('gateway.callback-success', ['message' => 'با موفقیت انجام شد', 'refId' => $transaction->ref_id, 'orderId' => $transaction->order_id, 'saleReference' => $transaction->sale_reference, 'amount' => riyalToToman($transaction->price), 'deepLink' => self::DEEP_LINK . "/Settlement/" . $order->invoice_id]);
     }
 
     public function rejectOrder($order, $status, $view, $refId = null, $orderId = null, $saleReference= null, $amount = null)
