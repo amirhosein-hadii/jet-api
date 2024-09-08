@@ -68,6 +68,30 @@ class InvoiceController extends Controller
         return ApiResponse::Json(200, '', $data, 200);
     }
 
+    public function invoiceProductList()
+    {
+        $products = UsersInvoice::query()
+            ->join('users_invoices_products', 'users_invoices_products.invoice_id','=','users_invoices.id')
+            ->join('users_addresses', 'users_invoices_products.user_address_id','=', 'users_addresses.id')
+            ->join('vendors_products', 'vendors_products.id', 'users_invoices_products.vendor_product_id')
+            ->join('products', 'products.id','=', 'vendors_products.product_id')
+            ->join('vendors', 'vendors.id','=', 'vendors_products.vendor_id')
+            ->join('colors_sub_categories', 'vendors_products.sub_color_id','=', 'colors_sub_categories.id')
+            ->where('users_invoices.user_id', Auth::id())
+            ->select(
+                'users_invoices_products.id as invoices_products_id', 'users_invoices_products.deliver_date_from', 'users_invoices_products.deliver_date_to',
+                'users_invoices_products.origin_price', 'users_invoices_products.paid_price', 'users_invoices_products.delivery_price',
+                'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
+                'vendors.name as vendor_name', 'vendors.tel as vendor_tel',
+                'products.title as product_title', 'products.avatar_link_l',
+                'users_addresses.address',
+                'users_invoices.id as invoice_id', 'users_invoices.status', 'users_invoices.tracking_code'
+            )
+            ->get();
+
+        return ApiResponse::Json(200, '', $products, 200);
+    }
+
     public function preCreateInvoice()
     {
         try {
