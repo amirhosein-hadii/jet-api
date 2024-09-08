@@ -145,4 +145,23 @@ class UserController extends Controller
             return ApiResponse::Json(400,$exception->getMessage(), [],400);
         }
     }
+
+    public function details(Request $request)
+    {
+        $validator = Validator::make($request->json()->all(), [
+            'f_name'  => 'nullable|string|min:2|max:25',
+            'l_name'  => 'nullable|string|min:2|max:25',
+        ]);
+
+        if ($validator->fails()) {
+            return ApiResponse::Json(400, $validator->errors()->first(),[],400);
+        }
+
+        $user = Auth::user();
+        $user->f_name = $request->f_name;
+        $user->l_name = $request->l_name;
+        $user->save();
+
+        return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+    }
 }

@@ -18,6 +18,8 @@ Route::prefix('profile')->middleware('auth:api')->group(function () {
     Route::post('/address/{id}/change-selected', 'UserController@changeSelectedAddress');
     Route::get('/address/list', 'UserController@listAddress');
     Route::delete('/address/{addressId}', 'UserController@deleteAddress');
+
+    Route::post('/details/', 'UserController@details');
 });
 
 // Basket
