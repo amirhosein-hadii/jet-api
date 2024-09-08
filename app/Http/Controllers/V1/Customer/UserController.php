@@ -60,13 +60,15 @@ class UserController extends Controller
             $userId = Auth::id();
 
             $inactiveAddress = UserAddress::query()
+                ->where('id', $id)
                 ->where('user_id', $userId)
                 ->update(['status' => 'inactive']);
+
+            UserAddress::query()->where('user_id', $userId)->update(['selected' => 0]);
 
             if (!$inactiveAddress) {
                 throw new \Exception('خطا در بروزرسانی آدرس قبلی');
             }
-
 
             UserAddress::query()->insert([
                 'user_id'     => $userId,
