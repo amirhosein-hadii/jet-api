@@ -106,13 +106,15 @@ class Ewallet
         }
     }
 
-    public function createTransaction($ewalletId, $type, $amount)
+    public function createTransaction($ewalletId, $type, $amount, $invoiceId = null, $invoiceProductId = null)
     {
         try {
             $data_json = json_encode([
-                'ewallet_id'   => $ewalletId,
-                'type'         => $type,
-                'amount'       => $amount,
+                'ewallet_id'         => $ewalletId,
+                'type'               => $type,
+                'amount'             => $amount,
+                'invoice_id'         => $invoiceId,
+                'invoice_product_id' => $invoiceProductId,
             ]);
 
             $curl = curl_init();

@@ -23,9 +23,12 @@ class BehpardakhtController extends Controller
     const DEEP_LINK = 'http://37.32.15.7:3000/';
     private $psp;
 
+    private $ewallet;
+
     public function __construct()
     {
         $this->psp = new Behpardakht();
+        $this->ewallet = new Ewallet();
     }
 
     public function createTransactions($invoiceId)
@@ -100,8 +103,7 @@ class BehpardakhtController extends Controller
                 return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
             }
 
-            $ewallet = new Ewallet();
-            $CashInRes = $ewallet->createTransaction($userEwallet->ewallet_id, 'cache-in', $order->amount);
+            $CashInRes = $this->ewallet->createTransaction($userEwallet->ewallet_id, 'cache-in', $order->amount);
 
             if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
@@ -130,10 +132,14 @@ class BehpardakhtController extends Controller
             InvoiceController::consumeInventoryNumAfterPaid($invoice->userInvoiceProducts);
 
             // Payment consume
-            $PaymentConsumeRes = $ewallet->createTransaction($userEwallet->ewallet_id, 'payment_consume', $order->amount);
+            $PaymentConsumeRes = $this->ewallet->createTransaction($userEwallet->ewallet_id, 'payment_consume', $order->amount, $invoice->id);
             if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
+
+            // Settlement with the vendor owner
+            $this->settlementWithVendorOwner($invoice->userInvoiceProducts);
+
 
             // Clear basket
             UsersBasket::query()->where('user_id', $order->user_id)->where('next_purchase', 0)->delete();
@@ -157,5 +163,19 @@ class BehpardakhtController extends Controller
         $order->status = $status;
         $order->save();
         return view($view, ['message' => 'خطایی رخ داده است', 'refId' => $refId, 'orderId' => $orderId, 'saleReference' => $saleReference, 'amount' => riyalToToman($amount), 'deepLink' => self::DEEP_LINK, 'type' => 'customer']);
+    }
+
+    public function settlementWithVendorOwner($invoiceProducts)
+    {
+        foreach ($invoiceProducts as $invoiceProduct)
+        {
+            $vendorOwnerId = $invoiceProduct->vendorProduct->vendor->vendorUser->first()->user_id;
+            $merchantFee = $invoiceProduct->vendorProduct->vendor->merchant_fee;
+            $amount = (100 - $merchantFee) * $invoiceProduct->paid_price;
+
+            $userEwallet = UserEwallet::query()->where('user_id', $vendorOwnerId)->first();
+
+            $PaymentConsumeRes = $this->ewallet->createTransaction($userEwallet->ewallet_id, 'payment_earn', $amount, $invoiceProduct->invoice_id, $invoiceProduct->id);
+        }
     }
 }
