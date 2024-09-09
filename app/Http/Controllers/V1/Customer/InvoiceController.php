@@ -77,17 +77,23 @@ class InvoiceController extends Controller
             ->join('products', 'products.id','=', 'vendors_products.product_id')
             ->join('vendors', 'vendors.id','=', 'vendors_products.vendor_id')
             ->join('colors_sub_categories', 'vendors_products.sub_color_id','=', 'colors_sub_categories.id')
-            ->where('users_invoices.user_id', Auth::id())
+            ->where('users_invoices.user_id', 5)
             ->select(
                 'users_invoices_products.id as invoices_products_id', 'users_invoices_products.deliver_date_from', 'users_invoices_products.deliver_date_to',
                 'users_invoices_products.origin_price', 'users_invoices_products.paid_price', 'users_invoices_products.delivery_price',
                 'colors_sub_categories.name as color_name', 'colors_sub_categories.code as color_code',
                 'vendors.name as vendor_name', 'vendors.tel as vendor_tel',
-                'products.title as product_title', 'products.avatar_link_l',
+                'products.title as product_title', 'products.avatar_link_l', 'products.id as product_id',
                 'users_addresses.address',
-                'users_invoices.id as invoice_id', 'users_invoices.status', 'users_invoices.tracking_code'
+                'users_invoices.id as invoice_id', 'users_invoices.status', 'users_invoices.tracking_code', 'users_invoices.created_at'
             )
             ->get();
+
+        $products->map(function ($item) {
+            $item->deliver_date_from = convertReelToDashedJalalian($item->deliver_date_from);
+            $item->deliver_date_to   = convertReelToDashedJalalian($item->deliver_date_to);
+            $item->created           = convertToDashedJalalian($item->created_at);
+        });
 
         return ApiResponse::Json(200, '', $products, 200);
     }

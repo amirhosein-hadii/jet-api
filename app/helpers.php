@@ -158,3 +158,8 @@ function convertToEnglishNums($number)
     function jalalianAddDays(int $days) {
         return Jalalian::forge(Carbon::now()->addDays($days))->format('Ymd');
     }
+
+    function convertToDashedJalalian($date)
+    {
+        return \Morilog\Jalali\Jalalian::forge($date)->format('Y-m-d');
+    }
