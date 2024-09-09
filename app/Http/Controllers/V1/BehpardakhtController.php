@@ -171,7 +171,7 @@ class BehpardakhtController extends Controller
         {
             $vendorOwnerId = $invoiceProduct->vendorProduct->vendor->vendorUser->first()->user_id;
             $merchantFee = $invoiceProduct->vendorProduct->vendor->merchant_fee;
-            $amount = (100 - $merchantFee) * $invoiceProduct->paid_price;
+            $amount = (100 - $merchantFee) * $invoiceProduct->paid_price / 100;
 
             $userEwallet = UserEwallet::query()->where('user_id', $vendorOwnerId)->first();
 
