@@ -103,7 +103,7 @@ class BehpardakhtController extends Controller
                 return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
             }
 
-            $CashInRes = $this->ewallet->createTransaction($userEwallet->ewallet_id, 'cache-in', $order->amount);
+            $CashInRes = $this->ewallet->createTransaction( 'cache-in', $order->amount, $userEwallet->ewallet_id);
 
             if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
@@ -132,7 +132,7 @@ class BehpardakhtController extends Controller
             InvoiceController::consumeInventoryNumAfterPaid($invoice->userInvoiceProducts);
 
             // Payment consume
-            $PaymentConsumeRes = $this->ewallet->createTransaction($userEwallet->ewallet_id, 'payment_consume', $order->amount, $invoice->id);
+            $PaymentConsumeRes = $this->ewallet->createTransaction('payment_consume', $order->amount, $userEwallet->ewallet_id, $invoice->id);
             if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['ewallet_transaction_id']) ) {
                 throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
             }
@@ -171,11 +171,14 @@ class BehpardakhtController extends Controller
         {
             $vendorOwnerId = $invoiceProduct->vendorProduct->vendor->vendorUser->first()->user_id;
             $merchantFee = $invoiceProduct->vendorProduct->vendor->merchant_fee;
-            $amount = (100 - $merchantFee) * $invoiceProduct->paid_price / 100;
+
+            $vendorShare = (100 - $merchantFee) / 100 * $invoiceProduct->paid_price ;
+            $agencyShare = $merchantFee / 100 * $invoiceProduct->paid_price ;
 
             $userEwallet = UserEwallet::query()->where('user_id', $vendorOwnerId)->first();
 
-            $PaymentConsumeRes = $this->ewallet->createTransaction($userEwallet->ewallet_id, 'payment_earn', $amount, $invoiceProduct->invoice_id, $invoiceProduct->id);
+            $PaymentEarnRes = $this->ewallet->createTransaction('payment_earn', $vendorShare, $userEwallet->ewallet_id, $invoiceProduct->invoice_id, $invoiceProduct->id); // Vendor
+            $PaymentEarnRes = $this->ewallet->createTransaction('payment_earn', $agencyShare, null, $invoiceProduct->invoice_id, $invoiceProduct->id); // Agency
         }
     }
 }

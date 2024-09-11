@@ -37,8 +37,6 @@ class SendSMSJob implements ShouldQueue
      */
     public function handle()
     {
-//        DB::table('test')->insert(['name' => $this->mobile, 'res' => $this->code]);
-
         sleep(5);
 
         $client = new Client();
