@@ -181,6 +181,24 @@ class InvoiceController extends Controller
             }
             $this->vendor_products_id = $vendor_products_id;
 
+
+            // Check inventory num
+            $groupedVendorProductsRequest = $items->groupBy('vendor_product_id')->map(function ($group) {
+                return $group->count();
+            })->toArray();
+
+            $vendorProducts = VendorProduct::query()->whereIn('id', $vendor_products_id)->select('inventory_num', 'id','product_id')->get();
+            $existsInventoryNum = $vendorProducts->pluck('inventory_num', 'id')->toArray();
+
+            foreach ($groupedVendorProductsRequest as $key => $val)
+            {
+                if ($existsInventoryNum[$key] < $val) {
+                    $productTitle = $vendorProducts->where('id', $key)->first()->product->title;
+                    return ['status' => 400, 'msg' => 'تعداد انتخاب شده ' . $productTitle . 'بیشتر از موجودی است.'];
+                }
+            }
+
+
             // Check shipping
             $vpsi = $items->pluck('vendor_product_id', 'vendors_products_shipping_id')->toArray();
             $vendorProductsShipping = VendorsProductsShipping::query()->whereIn('vendor_product_id', $vendor_products_id)->pluck('vendor_product_id', 'id')->toArray();
