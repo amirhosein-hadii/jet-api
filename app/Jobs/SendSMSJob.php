@@ -39,6 +39,8 @@ class SendSMSJob implements ShouldQueue
     {
 //        DB::table('test')->insert(['name' => $this->mobile, 'res' => $this->code]);
 
+        sleep(5);
+
         $client = new Client();
         $client->request('POST', 'https://api.kavenegar.com/v1/6D33665547746B37755A5A63334E7A345A30676B4F4953507565527546307A55/verify/lookup.json', [
             'form_params' => [
