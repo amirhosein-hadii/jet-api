@@ -19,7 +19,9 @@ class UserController extends Controller
         $validator = Validator::make($request->json()->all(), [
             'address'     => 'required|string|max:255|min:10',
             'postal_code' => 'required|digits:10',
-            'city_id'     => 'required|exists:location_cities,id'
+            'city_id'     => 'required|exists:location_cities,id',
+            'lat'         => 'required|numeric|between:-180,180',
+            'long'        => 'required|numeric|between:-90,90',
         ]);
 
         if ($validator->fails()) {
@@ -36,7 +38,9 @@ class UserController extends Controller
             'postal_code' => $request->postal_code,
             'selected'    => 1,
             'city_id'     => $request->city_id,
-            'status'      => 'active'
+            'status'      => 'active',
+            'latitude'    => $request->lat,
+            'longitude'   => $request->long,
         ]);
 
         return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
@@ -47,7 +51,9 @@ class UserController extends Controller
         $validator = Validator::make($request->json()->all(), [
             'address'     => 'required|string|max:255|min:10',
             'postal_code' => 'required|digits:10',
-            'city_id'     => 'required|exists:location_cities,id'
+            'city_id'     => 'required|exists:location_cities,id',
+            'lat'         => 'required|numeric|between:-180,180',
+            'long'        => 'required|numeric|between:-90,90',
         ]);
 
         if ($validator->fails()) {
@@ -76,7 +82,9 @@ class UserController extends Controller
                 'postal_code' => $request->postal_code,
                 'selected'    => 1,
                 'city_id'     => $request->city_id,
-                'status'      => 'active'
+                'status'      => 'active',
+                'latitude'    => $request->lat,
+                'longitude'   => $request->long,
             ]);
 
             DB::commit();
@@ -119,7 +127,7 @@ class UserController extends Controller
             ->join('location_provinces','location_provinces.id','=','location_cities.province_id')
             ->where('user_id', Auth::id())
             ->where('users_addresses.status', 'active')
-            ->select('users_addresses.id', 'address', 'postal_code', 'selected',
+            ->select('users_addresses.id', 'address', 'postal_code', 'selected', 'users_addresses.latitude', 'users_addresses.longitude',
                 'location_cities.name as city_name', 'location_cities.id as city_id',
                 'location_provinces.name as province_name' ,'location_provinces.id as province_id'
             )->orderBy('selected', 'desc')

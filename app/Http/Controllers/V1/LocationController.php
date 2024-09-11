@@ -21,8 +21,9 @@ class LocationController extends Controller
     {
         $cities = LocationCities::query()
             ->where('province_id', $provinceId)
-            ->select('id', 'name')
+            ->select('id', 'name', 'longitude', 'latitude')
             ->get();
+
         return ApiResponse::Json(200,'', $cities,200);
     }
 
