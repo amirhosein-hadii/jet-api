@@ -40,3 +40,8 @@ Route::prefix('invoice')->middleware('auth:api')->group(function () {
     Route::get('/product/list', 'InvoiceController@invoiceProductList');
 
 });
+
+// Notification
+Route::prefix('notifications')->middleware('auth:api')->group(function () {
+    Route::get('/get', 'NotificationController@getNotifications');
+});
