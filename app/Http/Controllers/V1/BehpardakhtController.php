@@ -4,6 +4,7 @@ namespace App\Http\Controllers\V1;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\V1\Customer\InvoiceController;
+use App\Http\Controllers\V1\Customer\InvoicePaymentController;
 use App\Models\Order;
 use App\Models\OrderLog;
 use App\Models\UserEwallet;
@@ -96,62 +97,23 @@ class BehpardakhtController extends Controller
             return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
         }
 
-        try {
-            // CashIn
-            $userEwallet = UserEwallet::query()->where('user_id', $order->user_id)->first();
-            if (!$userEwallet) {
-                return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
-            }
-
-            $CashInRes = $this->ewallet->createTransaction( 'cache-in', $order->amount, $userEwallet->ewallet_id);
-
-            if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['ewallet_transaction_id']) ) {
-                throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
-            }
+        $userEwallet = UserEwallet::query()->where('user_id', $order->user_id)->first();
+        if (!$userEwallet) {
+            return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
+        }
+        $userEwalletId = $userEwallet->ewallet_id;
 
 
-            $result = $this->psp->TransactionVerify($transaction->order_id, $transaction->ref_id, $transaction->sale_reference);
-            if ($result['status'] <> 200) {
-                throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
-            }
+        // CashIn
+        $cashInRes = $this->cashIn($order, $transaction, $userEwalletId);
+        if (!isset($cashInRes['status']) || $cashInRes['status'] <> 200) {
+            throw new \Exception($cashInRes['message'] ?? 'خطایی رخ داده است.');
+        }
 
-            DB::beginTransaction();
-
-            $order->status           = 'success';
-            $order->ref_id           = $transaction->ref_id;
-            $order->sale_reference   = $transaction->sale_reference;
-            $order->card_holder_info = $transaction->card_holder_pan;
-            $order->card_holder_pan  = $transaction->card_holder_info;
-            $order->save();
-
-            $invoice = UsersInvoice::query()->with('userInvoiceProducts.vendorProduct')->where('id', $order->invoice_id)->where('status', 'waiting')->firstOrFail();
-            $invoice->status = 'success';
-            $invoice->save();
-
-            //  consume inventory_num
-            InvoiceController::consumeInventoryNumAfterPaid($invoice->userInvoiceProducts);
-
-            // Payment consume
-            $PaymentConsumeRes = $this->ewallet->createTransaction('payment_consume', $order->amount, $userEwallet->ewallet_id, $invoice->id);
-            if ( !isset($PaymentConsumeRes['status']) || $PaymentConsumeRes['status'] <> 200 || !isset($PaymentConsumeRes['ewallet_transaction_id']) ) {
-                throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
-            }
-
-            // Settlement with the vendor owner
-            $this->settlementWithVendorOwner($invoice->userInvoiceProducts);
-
-
-            // Clear basket
-            UsersBasket::query()->where('user_id', $order->user_id)->where('next_purchase', 0)->delete();
-
-            DB::commit();
-
-
-        } catch (\Exception $exception) {
-            DB::rollBack();
-            $order->status           = 'unsuccess';
-            $order->description      = 'ewallet_cashed_in_successfully_but_not_banking_verified';
-            $order->save();
+        // Done payment process
+        $invoicePayment = new InvoicePaymentController();
+        $donePaymentProcessRes = $invoicePayment->donePaymentProcess($order, $userEwalletId);
+        if (!isset($donePaymentProcessRes['status']) || $donePaymentProcessRes['status'] <> 200) {
             return $this->rejectOrder($order, 'unsuccess', 'gateway.callback-unsuccess', $transaction->ref_id, $transaction->order_id, $transaction->sale_reference, $transaction->price);
         }
 
@@ -165,20 +127,40 @@ class BehpardakhtController extends Controller
         return view($view, ['message' => 'خطایی رخ داده است', 'refId' => $refId, 'orderId' => $orderId, 'saleReference' => $saleReference, 'amount' => riyalToToman($amount), 'deepLink' => self::DEEP_LINK, 'type' => 'customer']);
     }
 
-    public function settlementWithVendorOwner($invoiceProducts)
+    public function cashIn($order, $transaction, $userEwalletId)
     {
-        foreach ($invoiceProducts as $invoiceProduct)
-        {
-            $vendorOwnerId = $invoiceProduct->vendorProduct->vendor->vendorUser->first()->user_id;
-            $merchantFee = $invoiceProduct->vendorProduct->vendor->merchant_fee;
+        try {
+            $CashInRes = $this->ewallet->createTransaction( 'cache-in', $order->amount, $userEwalletId);
 
-            $vendorShare = (100 - $merchantFee) / 100 * $invoiceProduct->paid_price ;
-            $agencyShare = $merchantFee / 100 * $invoiceProduct->paid_price ;
+            if ( !isset($CashInRes['status']) || $CashInRes['status'] <> 200 || !isset($CashInRes['ewallet_transaction_id']) ) {
+                throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
+            }
 
-            $userEwallet = UserEwallet::query()->where('user_id', $vendorOwnerId)->first();
 
-            $PaymentEarnRes = $this->ewallet->createTransaction('payment_earn', $vendorShare, $userEwallet->ewallet_id, $invoiceProduct->invoice_id, $invoiceProduct->id); // Vendor
-            $PaymentEarnRes = $this->ewallet->createTransaction('payment_earn', $agencyShare, null, $invoiceProduct->invoice_id, $invoiceProduct->id); // Agency
+            $result = $this->psp->TransactionVerify($transaction->order_id, $transaction->ref_id, $transaction->sale_reference);
+            if ($result['status'] <> 200) {
+                throw new \Exception($res['message'] ?? 'خطایی رخ داده است.');
+            }
+
+            $order->status           = 'success';
+            $order->ref_id           = $transaction->ref_id;
+            $order->sale_reference   = $transaction->sale_reference;
+            $order->card_holder_info = $transaction->card_holder_pan;
+            $order->card_holder_pan  = $transaction->card_holder_info;
+            $order->save();
+
+            return ['status' => 200, 'msg' => null];
+
+        } catch (\Exception $exception) {
+            $order->status           = 'unsuccess';
+            $order->description      = 'ewallet_cashed_in_successfully_but_not_banking_verified';
+            $order->ref_id           = $transaction->ref_id;
+            $order->sale_reference   = $transaction->sale_reference;
+            $order->card_holder_info = $transaction->card_holder_pan;
+            $order->card_holder_pan  = $transaction->card_holder_info;
+            $order->save();
+
+            return ['status' => 400, 'msg' => $exception->getMessage()];
         }
     }
 }

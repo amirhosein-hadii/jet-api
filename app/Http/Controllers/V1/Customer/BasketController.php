@@ -5,6 +5,7 @@ namespace App\Http\Controllers\V1\Customer;
 use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
 use App\Models\UsersBasket;
+use App\Models\VendorProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -23,13 +24,37 @@ class BasketController extends Controller
             return ApiResponse::Json(400, $validator->errors()->first(),[],400);
         }
 
-        UsersBasket::query()->insert([
-            'user_id' => Auth::id(),
-            'vendor_product_id' => $request->vendor_product_id,
-            'next_purchase' => $request->next_purchase ?? 0,
-        ]);
+        try {
+            $userId = Auth::id();
 
-        return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+            // Check max purchasable num
+            $maxPurchasableNum = VendorProduct::query()
+                ->join('products', 'products.id', 'vendors_products.product_id')
+                ->where('vendors_products.id', $request->vendor_product_id)
+                ->value('products.max_purchasable_num');
+
+
+            $num = UsersBasket::query()
+                ->where('user_id', $userId)
+                ->where('next_purchase', 0)
+                ->where('vendor_product_id', $request->vendor_product_id)
+                ->count();
+
+            if ($num >= $maxPurchasableNum) {
+                return ApiResponse::Json(400, "حداکثر تعداد قابل خرید این محصول $maxPurchasableNum عدد می باشد.",[],400);
+            }
+
+            UsersBasket::query()->insert([
+                'user_id' => $userId,
+                'vendor_product_id' => $request->vendor_product_id,
+                'next_purchase' => $request->next_purchase ?? 0,
+            ]);
+
+            return ApiResponse::Json(200,'عملیات با موفقیت انجام شد.', [],200);
+
+        } catch (\Exception $e) {
+            return ApiResponse::Json(400, 'خطایی رخ داده است.',[],400);
+        }
     }
 
     public function removeFromBasket(Request $request)

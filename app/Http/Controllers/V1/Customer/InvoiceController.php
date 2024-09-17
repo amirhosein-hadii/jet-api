@@ -4,9 +4,7 @@ namespace App\Http\Controllers\V1\Customer;
 
 use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\V1\BehpardakhtController;
 use App\Models\Order;
-use App\Models\ProductsInventoryNumChanges;
 use App\Models\UserAddress;
 use App\Models\UsersBasket;
 use App\Models\UsersInvoice;
@@ -16,6 +14,7 @@ use App\Models\VendorsProductsShipping;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -130,6 +129,7 @@ class InvoiceController extends Controller
             return ApiResponse::Json(200,'', $data,200);
 
         } catch (\Exception $exception) {
+            Log::error($exception->getMessage(), ['file' => $exception->getFile(), 'line' => $exception->getLine()]);
             return ApiResponse::Json(400, $exception->getMessage(), [],400);
         }
     }
@@ -421,27 +421,5 @@ class InvoiceController extends Controller
         }
 
         throw new \Exception('خطا در محاسبه هزینه پست.' . $weight. $breakable,);
-    }
-
-    public function redirectToGateway($invoiceId)
-    {
-        return (new BehpardakhtController())->createTransactions($invoiceId);
-    }
-
-    public static function consumeInventoryNumAfterPaid($invoiceProducts)
-    {
-        foreach ($invoiceProducts as $invoiceProduct)
-        {
-            $changes[] = [
-                'product_vendor_id'         => $invoiceProduct->vendor_product_id,
-                'old_inventory_num'         => $invoiceProduct->vendorProduct->inventory_num,
-                'new_inventory_num'         => $invoiceProduct->vendorProduct->inventory_num - 1,
-                'users_invoices_product_id' => $invoiceProduct->id,
-            ];
-
-            VendorProduct::query()->where('id', $invoiceProduct->vendorProduct->id)->decrement('inventory_num');
-        }
-
-        ProductsInventoryNumChanges::query()->insert($changes);
     }
 }
