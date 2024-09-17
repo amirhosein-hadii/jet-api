@@ -4,8 +4,10 @@ namespace App\Http\Controllers\V1\Customer;
 
 use App\Http\Controllers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Models\Product;
 use App\Models\UsersBasket;
 use App\Models\VendorProduct;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -34,14 +36,16 @@ class BasketController extends Controller
                 ->value('products.max_purchasable_num');
 
 
-            $num = UsersBasket::query()
-                ->where('user_id', $userId)
-                ->where('next_purchase', 0)
-                ->where('vendor_product_id', $request->vendor_product_id)
-                ->count();
-
-            if ($num >= $maxPurchasableNum) {
-                return ApiResponse::Json(400, "حداکثر تعداد قابل خرید این محصول $maxPurchasableNum عدد می باشد.",[],400);
+            if (!is_null($maxPurchasableNum))
+            {
+                $num = UsersBasket::query()
+                    ->where('user_id', $userId)
+                    ->where('next_purchase', 0)
+                    ->where('vendor_product_id', $request->vendor_product_id)
+                    ->count();
+                if ($num >= $maxPurchasableNum) {
+                    return ApiResponse::Json(400, "حداکثر تعداد قابل خرید این محصول $maxPurchasableNum عدد می باشد.",[],400);
+                }
             }
 
             UsersBasket::query()->insert([
