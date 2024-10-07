@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\DB;
 
 class BehpardakhtController extends Controller
 {
-    const CALL_BACK = "http://37.32.15.7:8080/api/v1/behpardakht/callback/";
+    const CALL_BACK = "http://jetmall.ir/api/v1/behpardakht/callback/";
 
-    const DEEP_LINK = 'http://37.32.15.7:3000/';
+    const DEEP_LINK = 'http://jetmall.ir/';
     private $psp;
 
     private $ewallet;
